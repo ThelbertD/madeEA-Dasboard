@@ -1,293 +1,255 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
-<title>MadeEA Funnel</title>
+<title>MadeEA Analytics</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Schibsted+Grotesk:wght@400;600;700;800;900&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Schibsted+Grotesk:wght@600;700;800;900&display=swap">
 <style>
 /* ==========================================================================
-   PALETTE
-   The two series hues were validated with the dataviz palette checker rather
-   than picked by eye. Light on #FBF7F2 and dark on #14212E both pass the
-   lightness band, chroma floor, CVD separation (worst adjacent dE 30.7 protan),
-   the normal-vision floor, and 3:1 contrast against their own surface.
+   A deliberately single-theme dark console. Every colour is painted
+   explicitly, so the page holds whatever the viewer's OS is set to.
 
-   Colour follows the entity: leads are always blue, appointments always
-   orange, in every chart and in the table. Filtering never repaints them.
+   SERIES COLOURS WERE VALIDATED, NOT PICKED BY EYE
+   Against the #0E1726 surface, through the palette checker:
+     leads #3987E5 / appointments #D95926 — all checks pass, worst adjacent
+       CVD dE 30.7 (protan), normal-vision 36.8.
+     confirmed #159C86 / cancelled #CE4A4A — all checks pass, no warning.
+       An amber third status was tried and rejected: amber against red failed
+       both the CVD floor (dE 5.9) and the normal-vision floor (dE 12.7).
+   Status colours stay separate from the series colours and are never reused.
+
+   Colour follows the entity: leads blue everywhere, appointments orange
+   everywhere. Changing the range never repaints them.
    ========================================================================== */
 :root{
-  color-scheme: light;
-  --surface:#FBF7F2;
-  --card:#FFFFFF;
-  --line:#E9E1D6;
-  --grid:#EFE7DC;
-  --ink:#152E47;
-  --ink-2:#41566C;
-  --ink-3:#6B7C8D;
-  --leads:#1F6FEB;
-  --appts:#D8480D;
-  --good:#177A4B;
-  --bad:#B3341A;
-  --focus:#FD5811;
-}
-@media (prefers-color-scheme: dark){
-  :root:not([data-theme="light"]){
-    color-scheme: dark;
-    --surface:#14212E;
-    --card:#1B2A3A;
-    --line:#2A3D4F;
-    --grid:#26384A;
-    --ink:#F1F5F9;
-    --ink-2:#B6C4D2;
-    --ink-3:#8699AA;
-    --leads:#3987E5;
-    --appts:#D95926;
-    --good:#3FBF83;
-    --bad:#F08A72;
-  }
-}
-:root[data-theme="dark"]{
   color-scheme: dark;
-  --surface:#14212E;
-  --card:#1B2A3A;
-  --line:#2A3D4F;
-  --grid:#26384A;
-  --ink:#F1F5F9;
-  --ink-2:#B6C4D2;
-  --ink-3:#8699AA;
+  --bg:#0A1119;
+  --surface:#0E1726;
+  --surface-2:#131F31;
+  --line:#1E2D42;
+  --line-soft:#182539;
+  --ink:#E8EFF7;
+  --ink-2:#9FB2C8;
+  --ink-3:#6B819B;
   --leads:#3987E5;
   --appts:#D95926;
-  --good:#3FBF83;
-  --bad:#F08A72;
+  --ok:#159C86;
+  --bad:#CE4A4A;
+  --accent:#FD5811;
 }
-
 *{box-sizing:border-box;}
+html,body{margin:0;background:var(--bg);}
 body{
-  margin:0;background:var(--surface);color:var(--ink);
-  font-family:"Plus Jakarta Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-  font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased;
+  color:var(--ink);
+  font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;
 }
-h1,h2,h3{font-family:"Schibsted Grotesk","Plus Jakarta Sans",sans-serif;margin:0;letter-spacing:-.02em;}
-.wrap{max-width:1120px;margin:0 auto;padding:28px 22px 64px;}
-:focus-visible{outline:3px solid var(--focus);outline-offset:2px;border-radius:6px;}
+h1,h2,h3{font-family:"Schibsted Grotesk",Inter,sans-serif;margin:0;letter-spacing:-.015em;}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px;}
+[hidden]{display:none !important;}
+.wrap{max-width:1360px;margin:0 auto;padding:22px 20px 60px;}
 
 /* ---------- header ---------- */
-header.top{display:flex;flex-wrap:wrap;gap:14px 20px;align-items:baseline;justify-content:space-between;margin-bottom:6px;}
-h1{font-size:25px;font-weight:800;}
-.sub{color:var(--ink-3);font-size:13.5px;}
+.top{display:flex;flex-wrap:wrap;gap:12px 18px;align-items:flex-start;justify-content:space-between;}
+.top h1{font-size:21px;font-weight:800;}
+.top .sub{color:var(--ink-3);font-size:13px;margin-top:3px;}
+.tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
 
-/* ---------- filters: one row above the charts ---------- */
-.filters{
-  display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;
-  margin:22px 0 26px;padding-bottom:22px;border-bottom:1px solid var(--line);
-}
-.field{display:flex;flex-direction:column;gap:5px;}
-.field label{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);}
-input[type=date],input[type=password],select{
-  font:inherit;font-size:14px;color:var(--ink);background:var(--card);
-  border:1px solid var(--line);border-radius:9px;padding:9px 11px;min-height:40px;
-}
-.presets{display:flex;gap:6px;}
-.chip{
-  font:inherit;font-size:13px;font-weight:600;cursor:pointer;
-  background:var(--card);color:var(--ink-2);border:1px solid var(--line);
-  border-radius:100px;padding:8px 14px;min-height:40px;
-}
-.chip[aria-pressed=true]{background:var(--ink);color:var(--surface);border-color:var(--ink);}
+button,input[type=date],input[type=password]{font:inherit;}
 .btn{
-  font:inherit;font-size:14px;font-weight:700;cursor:pointer;
-  background:var(--ink);color:var(--surface);border:1px solid var(--ink);
-  border-radius:9px;padding:10px 18px;min-height:40px;
+  display:inline-flex;align-items:center;gap:7px;cursor:pointer;
+  background:var(--surface-2);color:var(--ink);border:1px solid var(--line);
+  border-radius:8px;padding:8px 13px;font-size:13px;font-weight:600;min-height:36px;
 }
-.btn.ghost{background:transparent;color:var(--ink-2);border-color:var(--line);font-weight:600;}
-.spacer{flex:1;}
-
-/* ---------- stat tiles ----------
-   These are the headline numbers, so they are tiles and not a chart. */
-.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
-.tile{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px 22px;}
-.tile .k{font-size:11.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3);display:flex;align-items:center;gap:8px;}
-.tile .swatch{width:10px;height:10px;border-radius:3px;flex:none;}
-.tile .v{
-  font-family:"Schibsted Grotesk",sans-serif;font-size:40px;font-weight:900;
-  line-height:1.05;margin-top:10px;letter-spacing:-.03em;
+.btn:hover{border-color:#2B3E58;}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;justify-content:center;}
+input[type=date],input[type=password]{
+  background:var(--surface-2);color:var(--ink);border:1px solid var(--line);
+  border-radius:8px;padding:8px 11px;font-size:13px;min-height:36px;
 }
-.tile .n{font-size:13px;color:var(--ink-3);margin-top:4px;}
-/* Change vs the previous equal-length period. A number alone says nothing;
-   "7 leads" only means something beside what the 30 days before it did. */
-.tile .delta{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;font-weight:700;margin-top:9px;}
-.tile .delta.up{color:var(--good);}
-.tile .delta.down{color:var(--bad);}
-.tile .delta.flat{color:var(--ink-3);}
-.tile .delta span{color:var(--ink-3);font-weight:500;}
+.seg{display:inline-flex;background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:2px;}
+.seg button{
+  background:transparent;border:0;color:var(--ink-3);cursor:pointer;
+  padding:6px 12px;border-radius:6px;font-size:12.5px;font-weight:600;
+}
+.seg button[aria-pressed=true]{background:var(--leads);color:#fff;}
 
-/* ---------- funnel strip ---------- */
-.funnel{display:flex;flex-direction:column;gap:9px;margin-top:8px;}
-.frow{display:grid;grid-template-columns:120px 1fr auto;gap:14px;align-items:center;}
-.frow .fl{font-size:13px;font-weight:600;color:var(--ink-2);}
-.ftrack{display:block;background:var(--grid);border-radius:5px;height:26px;overflow:hidden;}
-/* display:block matters: these are spans, and height has no effect on an
-   inline box, so without it the fill collapses and the track reads empty. */
-.fbar{display:block;height:100%;border-radius:5px;}
-.frow .fv{font-family:"Schibsted Grotesk",sans-serif;font-weight:800;font-size:16px;font-variant-numeric:tabular-nums;min-width:44px;text-align:right;}
-.fdrop{font-size:12.5px;color:var(--ink-3);padding-left:134px;}
+/* ---------- KPI row ---------- */
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-top:20px;}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:11px;padding:15px 16px;}
+.kpi .k{display:flex;align-items:center;gap:7px;font-size:10.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3);}
+.kpi .dot{width:8px;height:8px;border-radius:2px;flex:none;}
+.kpi .v{font-family:"Schibsted Grotesk",sans-serif;font-size:27px;font-weight:800;line-height:1.1;margin-top:9px;letter-spacing:-.02em;}
+.kpi .d{display:flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;margin-top:7px;min-height:17px;}
+.kpi .d.up{color:var(--ok);} .kpi .d.down{color:var(--bad);} .kpi .d.flat{color:var(--ink-3);}
+.kpi .d em{color:var(--ink-3);font-style:normal;font-weight:500;}
 
-/* ---------- chart cards ---------- */
-.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px;margin-top:22px;}
-.card h2{font-size:16.5px;font-weight:700;}
-.card .hint{font-size:13px;color:var(--ink-3);margin-top:3px;}
-.legend{display:flex;gap:16px;margin:14px 0 4px;flex-wrap:wrap;}
-.legend span{display:inline-flex;align-items:center;gap:7px;font-size:13px;color:var(--ink-2);font-weight:600;}
-.legend i{width:11px;height:11px;border-radius:3px;display:inline-block;}
+/* ---------- panels ---------- */
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:11px;padding:18px;margin-top:14px;}
+.panel h2{font-size:14.5px;font-weight:700;}
+.panel .hint{color:var(--ink-3);font-size:12.5px;margin-top:2px;}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px;}
+.grid2 .panel{margin-top:0;}
 
-figure{margin:0;}
+.legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:12px;}
+.legend span{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-2);font-weight:500;}
+.legend i{width:9px;height:9px;border-radius:2px;}
+
+figure{margin:12px 0 0;}
 svg{display:block;width:100%;height:auto;overflow:visible;}
-.gridline{stroke:var(--grid);stroke-width:1;}
-.axis{fill:var(--ink-3);font-size:11px;font-family:"Plus Jakarta Sans",sans-serif;}
-.axis.num{font-variant-numeric:tabular-nums;}
-.dlabel{font-family:"Schibsted Grotesk",sans-serif;font-size:11.5px;font-weight:800;font-variant-numeric:tabular-nums;}
+.gridline{stroke:var(--line-soft);stroke-width:1;}
+.ax{fill:var(--ink-3);font-size:10.5px;font-family:Inter,sans-serif;}
+.ax.n{font-variant-numeric:tabular-nums;}
+.dl{font-family:"Schibsted Grotesk",sans-serif;font-size:11px;font-weight:800;font-variant-numeric:tabular-nums;}
+
+/* funnel */
+.fn{display:flex;flex-direction:column;gap:11px;margin-top:14px;}
+.fnrow{display:grid;grid-template-columns:112px 1fr 96px;gap:12px;align-items:center;}
+.fnrow .l{font-size:12.5px;color:var(--ink-2);font-weight:500;}
+.fntrack{display:block;background:var(--line-soft);border-radius:4px;height:22px;overflow:hidden;}
+.fnbar{display:block;height:100%;border-radius:4px;}
+.fnrow .v{text-align:right;font-family:"Schibsted Grotesk",sans-serif;font-weight:800;font-size:14px;font-variant-numeric:tabular-nums;}
+.fnrow .v em{color:var(--ink-3);font-style:normal;font-weight:600;font-size:12px;margin-left:7px;}
+
+/* outcomes */
+.oc{display:flex;height:30px;border-radius:6px;overflow:hidden;margin-top:14px;gap:2px;background:var(--line-soft);}
+.oc span{display:block;height:100%;}
+.ocleg{display:flex;flex-wrap:wrap;gap:16px;margin-top:12px;}
+.ocleg div{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--ink-2);}
+.ocleg i{width:9px;height:9px;border-radius:2px;}
+.ocleg b{font-family:"Schibsted Grotesk",sans-serif;font-variant-numeric:tabular-nums;}
+.ocleg u{text-decoration:none;color:var(--ink-3);}
 
 /* tooltip */
 .tt{
-  position:fixed;pointer-events:none;z-index:20;opacity:0;transition:opacity .1s;
-  background:var(--card);border:1px solid var(--line);border-radius:10px;
-  padding:10px 12px;font-size:13px;min-width:150px;
-  box-shadow:0 10px 30px rgba(0,0,0,.18);
+  position:fixed;pointer-events:none;z-index:30;opacity:0;transition:opacity .08s;
+  background:var(--surface-2);border:1px solid var(--line);border-radius:9px;
+  padding:9px 11px;font-size:12.5px;min-width:152px;box-shadow:0 14px 34px rgba(0,0,0,.55);
 }
 .tt .d{font-weight:700;margin-bottom:6px;}
-.tt .r{display:flex;align-items:center;gap:8px;justify-content:space-between;}
+.tt .r{display:flex;align-items:center;gap:10px;justify-content:space-between;margin:0;}
 .tt .r b{font-variant-numeric:tabular-nums;}
-.tt i{width:9px;height:9px;border-radius:2px;display:inline-block;}
+.tt i{width:8px;height:8px;border-radius:2px;display:inline-block;}
+.tt p{margin:0;}
 
-/* ---------- table view ---------- */
-details.tbl{margin-top:16px;}
-details.tbl summary{cursor:pointer;font-size:13.5px;font-weight:600;color:var(--ink-2);}
-.scroll{overflow-x:auto;margin-top:12px;}
-table{border-collapse:collapse;width:100%;font-size:13.5px;}
-th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);white-space:nowrap;}
-th{font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3);}
-td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;}
+/* tables */
+details{margin-top:14px;}
+summary{cursor:pointer;font-size:12.5px;color:var(--ink-3);font-weight:500;}
+.scroll{overflow-x:auto;margin-top:10px;}
+table{border-collapse:collapse;width:100%;font-size:12.5px;}
+th,td{text-align:left;padding:8px 11px;border-bottom:1px solid var(--line-soft);white-space:nowrap;}
+th{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums;}
 
-/* ---------- states ---------- */
-.note{border-radius:12px;padding:16px 18px;font-size:14px;margin-top:22px;border:1px solid var(--line);background:var(--card);}
+/* states */
+.note{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:14px 16px;margin-top:16px;font-size:13px;}
 .note.err{border-color:var(--bad);}
-.note b{display:block;margin-bottom:4px;}
-.gate{max-width:430px;margin:9vh auto;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:28px;}
-.gate h1{font-size:21px;}
-.gate p{color:var(--ink-3);font-size:14px;margin:8px 0 18px;}
-.gate form{display:flex;flex-direction:column;gap:10px;}
-[hidden]{display:none !important;}
+.note b{display:block;margin-bottom:3px;}
+.empty{color:var(--ink-3);font-size:12.5px;padding:16px 0;margin:0;}
+.gate{max-width:400px;margin:12vh auto;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:26px;}
+.gate h1{font-size:19px;}
+.gate p{color:var(--ink-3);font-size:13px;margin:7px 0 16px;}
+.gate form{display:flex;flex-direction:column;gap:9px;}
 
-@media (max-width:820px){
-  .tiles{grid-template-columns:1fr;}
-  .filters{gap:10px;}
-  .spacer{display:none;}
-}
+@media (max-width:1120px){ .kpis{grid-template-columns:repeat(3,1fr);} }
+@media (max-width:860px){ .kpis{grid-template-columns:repeat(2,1fr);} .grid2{grid-template-columns:1fr;} }
+@media (max-width:560px){ .kpis{grid-template-columns:1fr;} }
 @media (prefers-reduced-motion:reduce){*{transition:none !important;}}
 </style>
 </head>
 <body>
 
-<!-- The key is asked for here and kept only in sessionStorage: it is a shared
-     passphrase for a read-only report, not an account credential. -->
 <div class="gate" id="gate" hidden>
-  <h1>MadeEA funnel</h1>
+  <h1>MadeEA Analytics</h1>
   <p>This report is private. Enter the dashboard key to continue.</p>
   <form id="gateForm">
     <input type="password" id="keyInput" placeholder="Dashboard key" autocomplete="current-password" required>
-    <button class="btn" type="submit">Open</button>
-    <p class="note err" id="gateErr" hidden style="margin-top:4px"></p>
+    <button class="btn primary" type="submit">Open</button>
+    <p class="note err" id="gateErr" hidden></p>
   </form>
 </div>
 
 <div class="wrap" id="app" hidden>
   <header class="top">
     <div>
-      <h1>MadeEA funnel</h1>
-      <p class="sub">Meta ads &rarr; leads in GHL &rarr; appointments booked</p>
+      <h1>Analytics</h1>
+      <p class="sub" id="sub">Where leads come from, and how many turn into booked calls.</p>
     </div>
-    <p class="sub" id="stamp"></p>
+    <div class="tools">
+      <div class="seg" role="group" aria-label="Date range">
+        <button type="button" data-days="7">7 days</button>
+        <button type="button" data-days="30" aria-pressed="true">30 days</button>
+        <button type="button" data-days="90">90 days</button>
+      </div>
+      <input type="date" id="from" aria-label="From">
+      <input type="date" id="to" aria-label="To">
+      <button class="btn" type="button" id="apply">Apply</button>
+      <button class="btn" type="button" id="csv">Export CSV</button>
+      <button class="btn" type="button" id="signout">Sign out</button>
+    </div>
   </header>
-
-  <div class="filters">
-    <div class="presets" role="group" aria-label="Date range presets">
-      <button class="chip" type="button" data-days="7">7 days</button>
-      <button class="chip" type="button" data-days="30" aria-pressed="true">30 days</button>
-      <button class="chip" type="button" data-days="90">90 days</button>
-    </div>
-    <div class="field">
-      <label for="from">From</label>
-      <input type="date" id="from">
-    </div>
-    <div class="field">
-      <label for="to">To</label>
-      <input type="date" id="to">
-    </div>
-    <button class="btn" type="button" id="apply">Apply</button>
-    <span class="spacer"></span>
-    <button class="btn ghost" type="button" id="signout">Sign out</button>
-  </div>
 
   <div id="msg"></div>
 
-  <section class="tiles" id="tiles" hidden>
-    <div class="tile">
-      <p class="k"><i class="swatch" style="background:var(--leads)"></i>Leads</p>
-      <p class="v" id="tLeads">—</p>
-      <p class="n" id="tLeadsN">contacts created in range</p>
-      <p class="delta" id="dLeads"></p>
-    </div>
-    <div class="tile">
-      <p class="k"><i class="swatch" style="background:var(--appts)"></i>Appointments</p>
-      <p class="v" id="tAppts">—</p>
-      <p class="n" id="tApptsN">cancellations excluded</p>
-      <p class="delta" id="dAppts"></p>
-    </div>
-    <div class="tile">
-      <p class="k">Booking rate</p>
-      <p class="v" id="tRate">—</p>
-      <p class="n" id="tRateN">appointments per lead</p>
-      <p class="delta" id="dRate"></p>
-    </div>
+  <section class="kpis" id="kpis" hidden>
+    <div class="kpi"><p class="k"><i class="dot" style="background:var(--leads)"></i>Leads</p><p class="v" id="kLeads">—</p><p class="d" id="dLeads"></p></div>
+    <div class="kpi"><p class="k"><i class="dot" style="background:var(--appts)"></i>Appointments</p><p class="v" id="kAppts">—</p><p class="d" id="dAppts"></p></div>
+    <div class="kpi"><p class="k">Booking rate</p><p class="v" id="kRate">—</p><p class="d" id="dRate"></p></div>
+    <div class="kpi"><p class="k">Held rate</p><p class="v" id="kHeld">—</p><p class="d" id="nHeld"></p></div>
+    <div class="kpi"><p class="k">Cancelled</p><p class="v" id="kCanc">—</p><p class="d" id="nCanc"></p></div>
   </section>
 
-  <section class="card" id="cardFunnel" hidden>
-    <h2>The funnel</h2>
-    <p class="hint">Where the people who reached you actually went.</p>
-    <div class="funnel" id="funnel"></div>
-  </section>
-
-  <section class="card" id="cardDay" hidden>
-    <h2>Leads and appointments per day</h2>
-    <p class="hint">Both are counts of people, so they share one axis.</p>
+  <section class="panel" id="pDay" hidden>
+    <h2>Lead acquisition activity</h2>
+    <p class="hint">Leads and booked calls across the window. Both count people, so they share one axis.</p>
     <div class="legend">
       <span><i style="background:var(--leads)"></i>Leads</span>
       <span><i style="background:var(--appts)"></i>Appointments</span>
     </div>
-    <figure><svg id="svgDay" role="img" aria-label="Daily leads and appointments"></svg></figure>
-    <details class="tbl">
-      <summary>View as table</summary>
-      <div class="scroll"><table id="tblDay"></table></div>
-    </details>
+    <figure><svg id="sDay" role="img" aria-label="Leads and appointments per day"></svg></figure>
+    <details><summary>View as table</summary><div class="scroll"><table id="tDay"></table></div></details>
   </section>
 
-  <section class="card" id="cardCamp" hidden>
-    <h2>By campaign</h2>
-    <p class="hint">Appointments are credited to the campaign that produced the lead.</p>
-    <div class="legend">
-      <span><i style="background:var(--leads)"></i>Leads</span>
-      <span><i style="background:var(--appts)"></i>Appointments</span>
-    </div>
-    <figure><svg id="svgCamp" role="img" aria-label="Leads and appointments by campaign"></svg></figure>
-    <details class="tbl">
-      <summary>View as table</summary>
-      <div class="scroll"><table id="tblCamp"></table></div>
-    </details>
-  </section>
+  <div class="grid2">
+    <section class="panel" id="pFunnel" hidden>
+      <h2>Lead funnel</h2>
+      <p class="hint">What happens between arriving and sitting on a call.</p>
+      <div class="fn" id="funnel"></div>
+    </section>
+
+    <section class="panel" id="pOutcome" hidden>
+      <h2>Appointment outcomes</h2>
+      <p class="hint">Every booking made in this window, by status.</p>
+      <div id="outcome"></div>
+    </section>
+  </div>
+
+  <div class="grid2">
+    <section class="panel" id="pSource" hidden>
+      <h2>Source performance</h2>
+      <p class="hint">Volume and booking quality by channel.</p>
+      <div class="legend">
+        <span><i style="background:var(--leads)"></i>Leads</span>
+        <span><i style="background:var(--appts)"></i>Appointments</span>
+      </div>
+      <figure><svg id="sSource" role="img" aria-label="Leads and appointments by source"></svg></figure>
+    </section>
+
+    <section class="panel" id="pCamp" hidden>
+      <h2>Campaign performance</h2>
+      <p class="hint">Bookings are credited to the campaign that produced the lead.</p>
+      <div class="legend">
+        <span><i style="background:var(--leads)"></i>Leads</span>
+        <span><i style="background:var(--appts)"></i>Appointments</span>
+      </div>
+      <figure><svg id="sCamp" role="img" aria-label="Leads and appointments by campaign"></svg></figure>
+      <details><summary>View as table</summary><div class="scroll"><table id="tCamp"></table></div></details>
+    </section>
+  </div>
 </div>
 
 <div class="tt" id="tt" role="status" aria-live="off"></div>
@@ -297,15 +259,16 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;}
   "use strict";
 
   var API = "/api/ghl-metrics";
-  var KEY_STORE = "madeeaDashKey";
+  var STORE = "madeeaDashKey";
+  var NS = "http://www.w3.org/2000/svg";
 
   var $ = function (id) { return document.getElementById(id); };
-  var NS = "http://www.w3.org/2000/svg";
   var el = function (n, a) {
     var e = document.createElementNS(NS, n);
-    for (var k in a) { if (a[k] !== null && a[k] !== undefined) e.setAttribute(k, a[k]); }
+    for (var k in a) if (a[k] !== null && a[k] !== undefined) e.setAttribute(k, a[k]);
     return e;
   };
+  var txt = function (n, a, s) { var e = el(n, a); e.textContent = s; return e; };
   var css = function (v) { return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); };
   var esc = function (s) {
     return String(s).replace(/[&<>"]/g, function (c) {
@@ -313,15 +276,16 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;}
     });
   };
   var iso = function (d) { return d.toISOString().slice(0, 10); };
+  var pct = function (n) { return Math.round(n * 1000) / 10 + "%"; };
+  var DASH = "—";
 
-  /* ─────────── auth gate ─────────── */
-  function key() { try { return sessionStorage.getItem(KEY_STORE) || ""; } catch (e) { return ""; } }
-  function setKey(v) { try { sessionStorage.setItem(KEY_STORE, v); } catch (e) {} }
-  function clearKey() { try { sessionStorage.removeItem(KEY_STORE); } catch (e) {} }
+  /* ─────────── auth ─────────── */
+  function key() { try { return sessionStorage.getItem(STORE) || ""; } catch (e) { return ""; } }
+  function setKey(v) { try { sessionStorage.setItem(STORE, v); } catch (e) {} }
+  function clearKey() { try { sessionStorage.removeItem(STORE); } catch (e) {} }
 
-  function showGate(message) {
-    $("app").hidden = true;
-    $("gate").hidden = false;
+  function gate(message) {
+    $("app").hidden = true; $("gate").hidden = false;
     var err = $("gateErr");
     if (message) { err.textContent = message; err.hidden = false; } else { err.hidden = true; }
     $("keyInput").focus();
@@ -331,357 +295,316 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;}
     e.preventDefault();
     var v = $("keyInput").value.trim();
     if (!v) return;
-    setKey(v);
-    $("gate").hidden = true;
-    $("app").hidden = false;
-    load();
+    setKey(v); $("gate").hidden = true; $("app").hidden = false; load();
   });
+  $("signout").addEventListener("click", function () { clearKey(); gate(""); });
 
-  $("signout").addEventListener("click", function () { clearKey(); showGate(""); });
-
-  /* ─────────── range controls ─────────── */
-  function setPreset(days) {
-    var to = new Date();
-    var from = new Date(to.getTime() - (days - 1) * 86400000);
-    $("from").value = iso(from);
-    $("to").value = iso(to);
+  /* ─────────── range ─────────── */
+  function preset(days) {
+    var to = new Date(), from = new Date(to.getTime() - (days - 1) * 86400000);
+    $("from").value = iso(from); $("to").value = iso(to);
   }
-  setPreset(30);
-
-  Array.prototype.forEach.call(document.querySelectorAll(".chip"), function (c) {
-    c.addEventListener("click", function () {
-      Array.prototype.forEach.call(document.querySelectorAll(".chip"), function (o) {
-        o.setAttribute("aria-pressed", String(o === c));
+  preset(30);
+  Array.prototype.forEach.call(document.querySelectorAll(".seg button"), function (b) {
+    b.addEventListener("click", function () {
+      Array.prototype.forEach.call(document.querySelectorAll(".seg button"), function (o) {
+        o.setAttribute("aria-pressed", String(o === b));
       });
-      setPreset(Number(c.dataset.days));
-      load();
+      preset(Number(b.dataset.days)); load();
     });
   });
   $("apply").addEventListener("click", function () {
-    Array.prototype.forEach.call(document.querySelectorAll(".chip"), function (o) {
+    Array.prototype.forEach.call(document.querySelectorAll(".seg button"), function (o) {
       o.setAttribute("aria-pressed", "false");
     });
     load();
   });
 
-  /* ─────────── data ─────────── */
-  function message(html, isError) {
-    $("msg").innerHTML = html ? '<div class="note' + (isError ? " err" : "") + '">' + html + "</div>" : "";
-  }
-  function panels(show) {
-    $("tiles").hidden = !show; $("cardFunnel").hidden = !show;
-    $("cardDay").hidden = !show; $("cardCamp").hidden = !show;
-  }
-
+  /* ─────────── load ─────────── */
   var current = null;
+  var PANELS = ["kpis", "pDay", "pFunnel", "pOutcome", "pSource", "pCamp"];
+  function panels(show) { PANELS.forEach(function (id) { $(id).hidden = !show; }); }
+  function msg(html, bad) {
+    $("msg").innerHTML = html ? '<div class="note' + (bad ? " err" : "") + '">' + html + "</div>" : "";
+  }
 
   function load() {
-    if (!key()) { showGate(""); return; }
-    message("Loading…", false);
-
+    if (!key()) { gate(""); return; }
+    msg("Loading…", false);
     var tz = "UTC";
     try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"; } catch (e) {}
 
-    var qs = "?from=" + encodeURIComponent($("from").value) +
-             "&to=" + encodeURIComponent($("to").value) +
-             "&tz=" + encodeURIComponent(tz);
-
-    fetch(API + qs, { headers: { "x-dashboard-key": key() } })
-      .then(function (r) { return r.json().then(function (b) { return { status: r.status, body: b }; }); })
+    fetch(API + "?from=" + encodeURIComponent($("from").value) +
+              "&to=" + encodeURIComponent($("to").value) +
+              "&tz=" + encodeURIComponent(tz),
+          { headers: { "x-dashboard-key": key() } })
+      .then(function (r) { return r.json().then(function (b) { return { s: r.status, b: b }; }); })
       .then(function (res) {
-        if (res.status === 401) { clearKey(); showGate("That key was not accepted."); return; }
-        if (res.status !== 200) {
+        if (res.s === 401) { clearKey(); gate("That key was not accepted."); return; }
+        if (res.s !== 200) {
           panels(false);
-          message("<b>" + esc(res.body.error || "Error") + "</b>" +
-                  esc(res.body.message || "The report could not be built.") +
-                  (res.body.endpoint ? "<br><small>Endpoint: " + esc(res.body.endpoint) + "</small>" : ""), true);
+          msg("<b>" + esc(res.b.error || "Error") + "</b>" + esc(res.b.message || "") +
+              (res.b.endpoint ? "<br><small>" + esc(res.b.endpoint) + "</small>" : ""), true);
           return;
         }
-        current = res.body;
-        message("", false);
-        panels(true);
-        render(current);
+        current = res.b; msg("", false); panels(true); render(current);
       })
       .catch(function () {
         panels(false);
-        message("<b>Could not reach the server</b>Check the deployment is live, then try again.", true);
+        msg("<b>Could not reach the server</b>Check the deployment is live, then try again.", true);
       });
   }
 
   /* ─────────── render ─────────── */
   function render(d) {
     var leads = d.totals.leads, appts = d.totals.appointments;
-    $("tLeads").textContent = leads.toLocaleString();
-    $("tAppts").textContent = appts.toLocaleString();
-    $("tRate").textContent = d.totals.bookingRate === null
-      ? "—" : Math.round(d.totals.bookingRate * 1000) / 10 + "%";
-    $("tRateN").textContent = d.totals.bookingRate === null
-      ? "no leads in this range yet"
-      : appts.toLocaleString() + " of " + leads.toLocaleString() + " leads booked";
-    $("stamp").textContent = d.range.from + " to " + d.range.to + " · " + d.range.timeZone;
+    var outcomes = d.outcomes || [];
+    var booked = outcomes.reduce(function (a, o) { return a + o.count; }, 0);
+    var cancelled = outcomes.reduce(function (a, o) {
+      return a + (isBad(o.status) ? o.count : 0);
+    }, 0);
+
+    $("sub").textContent = d.range.from + " to " + d.range.to + " · " + d.range.timeZone;
+    $("kLeads").textContent = leads.toLocaleString();
+    $("kAppts").textContent = appts.toLocaleString();
+    $("kRate").textContent = d.totals.bookingRate === null ? DASH : pct(d.totals.bookingRate);
+    $("kHeld").textContent = booked > 0 ? pct((booked - cancelled) / booked) : DASH;
+    $("nHeld").innerHTML = booked > 0
+      ? "<em>" + (booked - cancelled) + " of " + booked + " bookings stood up</em>"
+      : "<em>no bookings yet</em>";
+    $("kCanc").textContent = cancelled.toLocaleString();
+    $("nCanc").innerHTML = "<em>" + (booked > 0 ? pct(cancelled / booked) + " of bookings" : "none") + "</em>";
 
     var prev = d.previous || null;
     delta($("dLeads"), leads, prev && prev.leads, prev);
     delta($("dAppts"), appts, prev && prev.appointments, prev);
     delta($("dRate"),
       d.totals.bookingRate === null ? null : d.totals.bookingRate * 100,
-      prev && prev.bookingRate === null ? null : prev && prev.bookingRate * 100,
-      prev, "pp");
-
-    funnel(d);
+      !prev || prev.bookingRate === null ? null : prev.bookingRate * 100, prev, "pp");
 
     if (d.meta && d.meta.contactPagesCapped) {
-      message("<b>Showing a partial count</b>This range hit the page cap, so leads are undercounted. Narrow the range for exact numbers.", true);
+      msg("<b>Partial count</b>This range hit the page cap, so leads are undercounted. Narrow the range.", true);
     }
 
-    lineChart($("svgDay"), d.byDay);
-    dayTable($("tblDay"), d.byDay);
-    barChart($("svgCamp"), d.byCampaign);
-    campTable($("tblCamp"), d.byCampaign);
+    lineChart($("sDay"), d.byDay);
+    dayTable($("tDay"), d.byDay);
+    funnel(d, booked, cancelled);
+    outcomePanel(outcomes, booked);
+    barChart($("sSource"), d.bySource || [], 6);
+    barChart($("sCamp"), d.byCampaign || [], 6);
+    campTable($("tCamp"), d.byCampaign || []);
   }
 
-  /* Change against the previous equal-length period.
-     Direction is never carried by colour alone: an arrow and the words come
-     with it, so it reads the same to a colourblind viewer and in print. */
+  function isBad(status) { return /cancel|invalid|noshow|no-show/.test(String(status)); }
+
+  /* Direction never rests on colour alone: an arrow and words come with it. */
   function delta(node, now, before, prev, unit) {
     if (!prev || now === null || before === null || before === undefined) {
-      node.textContent = ""; node.className = "delta"; return;
+      node.textContent = ""; node.className = "d"; return;
     }
     var diff = now - before;
-    var pct = before !== 0 ? (diff / before) * 100 : null;
+    var rel = before !== 0 ? (diff / before) * 100 : null;
     var dir = diff > 0.05 ? "up" : diff < -0.05 ? "down" : "flat";
     var arrow = dir === "up" ? "↑" : dir === "down" ? "↓" : "→";
     var shown = unit === "pp"
       ? (diff >= 0 ? "+" : "") + (Math.round(diff * 10) / 10) + " pts"
-      : (diff >= 0 ? "+" : "") + diff + (pct === null ? "" : " (" + (pct >= 0 ? "+" : "") + Math.round(pct) + "%)");
-    node.className = "delta " + dir;
-    node.innerHTML = arrow + " " + esc(dir === "flat" ? "no change" : shown) +
-      ' <span>vs previous ' + esc(periodLabel(prev)) + "</span>";
+      : (diff >= 0 ? "+" : "") + diff + (rel === null ? "" : " (" + (rel >= 0 ? "+" : "") + Math.round(rel) + "%)");
+    node.className = "d " + dir;
+    node.innerHTML = arrow + " " + esc(dir === "flat" ? "no change" : shown) + " <em>vs previous</em>";
   }
 
-  function periodLabel(prev) {
-    var a = new Date(prev.from + "T00:00:00Z"), b = new Date(prev.to + "T00:00:00Z");
-    var days = Math.round((b - a) / 86400000) + 1;
-    return days + (days === 1 ? " day" : " days");
-  }
-
-  /* The funnel as proportion, not decoration: each stage is drawn against the
-     first, so the drop is the point rather than three equal bars. */
-  function funnel(d) {
-    var leads = d.totals.leads, appts = d.totals.appointments;
+  /* Stages drawn against the first, so the drop is the point. */
+  function funnel(d, booked, cancelled) {
+    var leads = d.totals.leads;
+    /* "Bookings made" counts every booking including the ones later cancelled,
+       so it is deliberately NOT the same number as the Appointments tile,
+       which excludes them. Naming both "appointments" made the two panels
+       look like they disagreed. */
     var stages = [
-      { label: "Leads", value: leads, colour: css("--leads") },
-      { label: "Appointments", value: appts, colour: css("--appts") }
+      { l: "Leads", v: leads, c: css("--leads"), note: "" },
+      { l: "Bookings made", v: booked, c: css("--appts"), note: leads ? pct(booked / leads) : "" },
+      { l: "Held, not cancelled", v: booked - cancelled, c: css("--ok"), note: booked ? pct((booked - cancelled) / booked) : "" }
     ];
     var max = Math.max(1, leads);
-    var box = $("funnel");
-    box.innerHTML = stages.map(function (s) {
-      var pct = Math.max(s.value > 0 ? 2 : 0, (s.value / max) * 100);
-      return '<div class="frow"><span class="fl">' + esc(s.label) + "</span>" +
-             '<span class="ftrack"><span class="fbar" style="width:' + pct + "%;background:" + s.colour + '"></span></span>' +
-             '<span class="fv">' + s.value.toLocaleString() + "</span></div>";
-    }).join("") +
-      '<p class="fdrop">' +
-      (leads === 0
-        ? "No leads in this range yet."
-        : appts === 0
-          ? "None of these leads booked."
-          : Math.round((appts / leads) * 1000) / 10 + "% of leads booked a call. " +
-            (leads - appts).toLocaleString() + " did not.") +
-      "</p>";
+    $("funnel").innerHTML = stages.map(function (s) {
+      var w = Math.max(s.v > 0 ? 2 : 0, (s.v / max) * 100);
+      return '<div class="fnrow"><span class="l">' + esc(s.l) + "</span>" +
+        '<span class="fntrack"><span class="fnbar" style="width:' + w + "%;background:" + s.c + '"></span></span>' +
+        '<span class="v">' + s.v.toLocaleString() + (s.note ? "<em>" + s.note + "</em>" : "") + "</span></div>";
+    }).join("");
   }
 
-  /* Time series. Two series, one shared axis, 2px lines, >=8px markers,
-     direct labels on the last point only, crosshair tooltip. */
+  /* A stacked bar rather than a donut. With two statuses a ring is the wrong
+     form, and a ring makes the first and last segments adjacent — which is
+     where the rejected amber/red pair failed its separation check. */
+  function outcomePanel(outcomes, booked) {
+    var box = $("outcome");
+    if (!booked) { box.innerHTML = '<p class="empty">No bookings in this window.</p>'; return; }
+    var colour = function (s) { return isBad(s) ? css("--bad") : css("--ok"); };
+    var label = function (s) { return String(s).charAt(0).toUpperCase() + String(s).slice(1); };
+
+    box.innerHTML =
+      '<div class="oc">' + outcomes.map(function (o) {
+        return '<span title="' + esc(label(o.status)) + ": " + o.count + '" style="width:' +
+          ((o.count / booked) * 100) + "%;background:" + colour(o.status) + '"></span>';
+      }).join("") + "</div>" +
+      '<div class="ocleg">' + outcomes.map(function (o) {
+        return '<div><i style="background:' + colour(o.status) + '"></i>' + esc(label(o.status)) +
+          " <b>" + o.count + "</b> <u>" + pct(o.count / booked) + "</u></div>";
+      }).join("") + "</div>";
+  }
+
+  /* Time series: 2px lines, one shared axis, direct label on the last point,
+     crosshair tooltip, markers only on shorter ranges. */
   function lineChart(svg, rows) {
     svg.textContent = "";
     if (!rows || !rows.length) return;
-
-    var W = 900, H = 300, L = 44, R = 54, T = 16, B = 34;
+    var W = 1100, H = 260, L = 40, R = 48, T = 14, B = 28;
     var iw = W - L - R, ih = H - T - B;
     svg.setAttribute("viewBox", "0 0 " + W + " " + H);
 
     var max = 0;
     rows.forEach(function (r) { max = Math.max(max, r.leads, r.appointments); });
-    max = Math.max(4, Math.ceil(max * 1.15));
-
+    max = Math.max(4, Math.ceil(max * 1.18));
     var x = function (i) { return rows.length === 1 ? L + iw / 2 : L + (i / (rows.length - 1)) * iw; };
     var y = function (v) { return T + ih - (v / max) * ih; };
 
-    var ticks = 4, i, t;
-    for (i = 0; i <= ticks; i++) {
-      t = Math.round((max / ticks) * i);
+    for (var i = 0; i <= 4; i++) {
+      var t = Math.round((max / 4) * i);
       svg.appendChild(el("line", { x1: L, x2: L + iw, y1: y(t), y2: y(t), class: "gridline" }));
-      svg.appendChild(Object.assign(el("text", {
-        x: L - 9, y: y(t) + 4, "text-anchor": "end", class: "axis num"
-      }), { textContent: t }));
+      svg.appendChild(txt("text", { x: L - 8, y: y(t) + 4, "text-anchor": "end", class: "ax n" }, t));
     }
-
-    var step = Math.max(1, Math.ceil(rows.length / 7));
+    var step = Math.max(1, Math.ceil(rows.length / 9));
     rows.forEach(function (r, idx) {
       if (idx % step !== 0 && idx !== rows.length - 1) return;
-      svg.appendChild(Object.assign(el("text", {
-        x: x(idx), y: H - 12, "text-anchor": "middle", class: "axis"
-      }), { textContent: r.date.slice(5) }));
+      svg.appendChild(txt("text", { x: x(idx), y: H - 9, "text-anchor": "middle", class: "ax" }, r.date.slice(5)));
     });
 
     [["leads", css("--leads")], ["appointments", css("--appts")]].forEach(function (s) {
-      var field = s[0], colour = s[1];
-      var pts = rows.map(function (r, idx) { return x(idx) + "," + y(r[field]); }).join(" ");
+      var f = s[0], c = s[1];
       svg.appendChild(el("polyline", {
-        points: pts, fill: "none", stroke: colour,
-        "stroke-width": 2, "stroke-linejoin": "round", "stroke-linecap": "round"
+        points: rows.map(function (r, i) { return x(i) + "," + y(r[f]); }).join(" "),
+        fill: "none", stroke: c, "stroke-width": 2, "stroke-linejoin": "round", "stroke-linecap": "round"
       }));
-      /* Markers on shorter ranges only. Across 90+ mostly-zero days they stop
-         reading as data points and start reading as a dotted rule along the
-         axis. The crosshair still gives every day a readout.
-         The 2px surface ring keeps them legible where the two series cross. */
-      if (rows.length <= 45) {
-        rows.forEach(function (r, idx) {
-          svg.appendChild(el("circle", {
-            cx: x(idx), cy: y(r[field]), r: 4.5,
-            fill: colour, stroke: css("--card"), "stroke-width": 2
-          }));
-        });
-      }
+      if (rows.length <= 45) rows.forEach(function (r, i) {
+        svg.appendChild(el("circle", { cx: x(i), cy: y(r[f]), r: 4, fill: c, stroke: css("--surface"), "stroke-width": 2 }));
+      });
       var last = rows[rows.length - 1];
-      svg.appendChild(Object.assign(el("text", {
-        x: x(rows.length - 1) + 10, y: y(last[field]) + 4, fill: colour, class: "dlabel"
-      }), { textContent: last[field] }));
+      svg.appendChild(txt("text", { x: x(rows.length - 1) + 9, y: y(last[f]) + 4, fill: c, class: "dl" }, last[f]));
     });
 
-    attachCrosshair(svg, rows, x, L, T, ih, W, R);
-  }
+    var vline = el("line", { y1: T, y2: T + ih, class: "gridline", "stroke-width": 2, opacity: 0 });
+    svg.appendChild(vline);
+    svg.appendChild(el("rect", { x: 0, y: 0, width: W, height: T + ih, fill: "transparent" }));
 
-  function attachCrosshair(svg, rows, x, L, T, ih, W, R) {
-    var line = el("line", { y1: T, y2: T + ih, class: "gridline", "stroke-width": 2, opacity: 0 });
-    svg.appendChild(line);
-    var tip = $("tt");
-
-    var hit = el("rect", { x: 0, y: 0, width: W, height: T + ih, fill: "transparent" });
-    svg.appendChild(hit);
-
-    function nearest(evt) {
-      var box = svg.getBoundingClientRect();
-      var px = ((evt.clientX - box.left) / box.width) * W;
-      var best = 0, bd = Infinity;
-      rows.forEach(function (r, i) {
-        var d = Math.abs(x(i) - px);
-        if (d < bd) { bd = d; best = i; }
-      });
+    function near(ev) {
+      var b = svg.getBoundingClientRect(), px = ((ev.clientX - b.left) / b.width) * W, best = 0, bd = Infinity;
+      rows.forEach(function (r, i) { var dd = Math.abs(x(i) - px); if (dd < bd) { bd = dd; best = i; } });
       return best;
     }
-
-    function show(evt) {
-      var i = nearest(evt), r = rows[i];
-      line.setAttribute("x1", x(i)); line.setAttribute("x2", x(i)); line.setAttribute("opacity", 1);
-      tip.innerHTML =
-        '<p class="d">' + esc(r.date) + "</p>" +
+    function show(ev) {
+      var i = near(ev), r = rows[i], tip = $("tt");
+      vline.setAttribute("x1", x(i)); vline.setAttribute("x2", x(i)); vline.setAttribute("opacity", 1);
+      tip.innerHTML = '<p class="d">' + esc(r.date) + "</p>" +
         '<p class="r"><span><i style="background:var(--leads)"></i> Leads</span><b>' + r.leads + "</b></p>" +
         '<p class="r"><span><i style="background:var(--appts)"></i> Appointments</span><b>' + r.appointments + "</b></p>";
       tip.style.opacity = 1;
-      var tw = tip.offsetWidth, th = tip.offsetHeight;
-      tip.style.left = Math.min(window.innerWidth - tw - 10, Math.max(10, evt.clientX + 14)) + "px";
-      tip.style.top = Math.max(10, evt.clientY - th - 12) + "px";
+      tip.style.left = Math.min(window.innerWidth - tip.offsetWidth - 10, Math.max(10, ev.clientX + 14)) + "px";
+      tip.style.top = Math.max(10, ev.clientY - tip.offsetHeight - 12) + "px";
     }
-    function hide() { tip.style.opacity = 0; line.setAttribute("opacity", 0); }
-
+    function hide() { $("tt").style.opacity = 0; vline.setAttribute("opacity", 0); }
     svg.addEventListener("mousemove", show);
     svg.addEventListener("mouseleave", hide);
     svg.addEventListener("touchmove", function (e) { if (e.touches[0]) show(e.touches[0]); }, { passive: true });
     svg.addEventListener("touchend", hide);
   }
 
-  /* Ranked horizontal bars. Sorted by leads, 4px rounded data-end anchored to
-     the baseline, 2px gap between the paired bars. */
-  function barChart(svg, rows) {
+  /* Ranked paired bars, sorted by leads. 4px rounded data-ends, a 2px gap
+     between the pair, direct labels, per-row hover. */
+  function barChart(svg, rows, limit) {
     svg.textContent = "";
-    if (!rows || !rows.length) {
-      svg.setAttribute("viewBox", "0 0 900 60");
-      svg.appendChild(Object.assign(el("text", { x: 0, y: 30, class: "axis" }),
-        { textContent: "No campaigns in this range." }));
+    if (!rows.length) {
+      svg.setAttribute("viewBox", "0 0 560 46");
+      svg.appendChild(txt("text", { x: 0, y: 26, class: "ax" }, "Nothing in this range."));
       return;
     }
-
-    var top = rows.slice(0, 8);
-    var LBL = 210, W = 900, R = 56, GROUP = 46, BAR = 16, GAP = 2;
-    var H = top.length * GROUP + 16;
+    var top = rows.slice(0, limit);
+    var W = 560, LBL = 158, R = 46, G = 42, BAR = 14, GAP = 2;
+    var H = top.length * G + 12;
     svg.setAttribute("viewBox", "0 0 " + W + " " + H);
-
-    var max = 0;
-    top.forEach(function (r) { max = Math.max(max, r.leads, r.appointments); });
-    max = Math.max(1, max);
+    var max = 1; top.forEach(function (r) { max = Math.max(max, r.leads, r.appointments); });
     var iw = W - LBL - R;
     var w = function (v) { return Math.max(v > 0 ? 3 : 0, (v / max) * iw); };
 
     top.forEach(function (r, i) {
-      var gy = i * GROUP + 8;
-      var name = r.campaign.length > 30 ? r.campaign.slice(0, 29) + "…" : r.campaign;
+      var gy = i * G + 6;
+      var name = r.campaign.length > 22 ? r.campaign.slice(0, 21) + "…" : r.campaign;
+      var lab = txt("text", { x: LBL - 10, y: gy + BAR + GAP / 2 + 4, "text-anchor": "end", class: "ax" }, name);
+      lab.appendChild(txt("title", {}, r.campaign));
+      svg.appendChild(lab);
 
-      var label = Object.assign(el("text", {
-        x: LBL - 12, y: gy + BAR + GAP / 2 + 4, "text-anchor": "end", class: "axis"
-      }), { textContent: name });
-      label.appendChild(Object.assign(el("title", {}), { textContent: r.campaign }));
-      svg.appendChild(label);
+      [["leads", css("--leads"), gy], ["appointments", css("--appts"), gy + BAR + GAP]].forEach(function (s) {
+        svg.appendChild(el("rect", { x: LBL, y: s[2], width: w(r[s[0]]), height: BAR, rx: 4, fill: s[1] }));
+        svg.appendChild(txt("text", { x: LBL + w(r[s[0]]) + 7, y: s[2] + BAR - 2, fill: s[1], class: "dl" }, r[s[0]]));
+      });
 
-      [["leads", css("--leads"), gy], ["appointments", css("--appts"), gy + BAR + GAP]]
-        .forEach(function (s) {
-          var field = s[0], colour = s[1], yy = s[2];
-          svg.appendChild(el("rect", {
-            x: LBL, y: yy, width: w(r[field]), height: BAR, rx: 4, fill: colour
-          }));
-          svg.appendChild(Object.assign(el("text", {
-            x: LBL + w(r[field]) + 8, y: yy + BAR - 3, fill: colour, class: "dlabel"
-          }), { textContent: r[field] }));
-        });
-
-      var hit = el("rect", { x: 0, y: gy - 4, width: W, height: GROUP - 2, fill: "transparent" });
-      hit.addEventListener("mousemove", function (evt) {
+      var hit = el("rect", { x: 0, y: gy - 3, width: W, height: G - 2, fill: "transparent" });
+      hit.addEventListener("mousemove", function (ev) {
         var tip = $("tt");
-        var rate = r.leads > 0 ? Math.round((r.appointments / r.leads) * 1000) / 10 + "%" : "—";
-        tip.innerHTML =
-          '<p class="d">' + esc(r.campaign) + "</p>" +
+        tip.innerHTML = '<p class="d">' + esc(r.campaign) + "</p>" +
           '<p class="r"><span><i style="background:var(--leads)"></i> Leads</span><b>' + r.leads + "</b></p>" +
           '<p class="r"><span><i style="background:var(--appts)"></i> Appointments</span><b>' + r.appointments + "</b></p>" +
-          '<p class="r"><span>Booking rate</span><b>' + rate + "</b></p>";
+          '<p class="r"><span>Booking rate</span><b>' + (r.leads ? pct(r.appointments / r.leads) : DASH) + "</b></p>";
         tip.style.opacity = 1;
-        tip.style.left = Math.min(window.innerWidth - tip.offsetWidth - 10, evt.clientX + 14) + "px";
-        tip.style.top = Math.max(10, evt.clientY - tip.offsetHeight - 12) + "px";
+        tip.style.left = Math.min(window.innerWidth - tip.offsetWidth - 10, ev.clientX + 14) + "px";
+        tip.style.top = Math.max(10, ev.clientY - tip.offsetHeight - 12) + "px";
       });
       hit.addEventListener("mouseleave", function () { $("tt").style.opacity = 0; });
       svg.appendChild(hit);
     });
 
     if (rows.length > top.length) {
-      svg.appendChild(Object.assign(el("text", { x: LBL, y: H - 2, class: "axis" }),
-        { textContent: "+ " + (rows.length - top.length) + " more in the table below" }));
+      svg.appendChild(txt("text", { x: LBL, y: H - 1, class: "ax" }, "+ " + (rows.length - top.length) + " more"));
     }
   }
 
-  /* ─────────── tables (the accessible view of the same numbers) ─────────── */
+  function rateCell(r) { return r.leads > 0 ? pct(r.appointments / r.leads) : DASH; }
+
   function dayTable(t, rows) {
-    t.innerHTML =
-      "<thead><tr><th>Date</th><th class='num'>Leads</th><th class='num'>Appointments</th><th class='num'>Rate</th></tr></thead><tbody>" +
+    t.innerHTML = "<thead><tr><th>Date</th><th class='n'>Leads</th><th class='n'>Appointments</th><th class='n'>Rate</th></tr></thead><tbody>" +
       rows.map(function (r) {
-        var rate = r.leads > 0 ? Math.round((r.appointments / r.leads) * 1000) / 10 + "%" : "—";
-        return "<tr><td>" + esc(r.date) + "</td><td class='num'>" + r.leads +
-               "</td><td class='num'>" + r.appointments + "</td><td class='num'>" + rate + "</td></tr>";
+        return "<tr><td>" + esc(r.date) + "</td><td class='n'>" + r.leads + "</td><td class='n'>" +
+          r.appointments + "</td><td class='n'>" + rateCell(r) + "</td></tr>";
+      }).join("") + "</tbody>";
+  }
+  function campTable(t, rows) {
+    t.innerHTML = "<thead><tr><th>Campaign</th><th class='n'>Leads</th><th class='n'>Appointments</th><th class='n'>Rate</th></tr></thead><tbody>" +
+      rows.map(function (r) {
+        return "<tr><td>" + esc(r.campaign) + "</td><td class='n'>" + r.leads + "</td><td class='n'>" +
+          r.appointments + "</td><td class='n'>" + rateCell(r) + "</td></tr>";
       }).join("") + "</tbody>";
   }
 
-  function campTable(t, rows) {
-    t.innerHTML =
-      "<thead><tr><th>Campaign</th><th class='num'>Leads</th><th class='num'>Appointments</th><th class='num'>Rate</th></tr></thead><tbody>" +
-      rows.map(function (r) {
-        var rate = r.leads > 0 ? Math.round((r.appointments / r.leads) * 1000) / 10 + "%" : "—";
-        return "<tr><td>" + esc(r.campaign) + "</td><td class='num'>" + r.leads +
-               "</td><td class='num'>" + r.appointments + "</td><td class='num'>" + rate + "</td></tr>";
-      }).join("") + "</tbody>";
-  }
+  /* CSV rather than a PDF "report": it opens in the tools this team already
+     uses, and needs no library. */
+  $("csv").addEventListener("click", function () {
+    if (!current) return;
+    var rows = [["date", "leads", "appointments"]];
+    current.byDay.forEach(function (r) { rows.push([r.date, r.leads, r.appointments]); });
+    rows.push([], ["campaign", "leads", "appointments"]);
+    (current.byCampaign || []).forEach(function (r) {
+      rows.push(['"' + String(r.campaign).replace(/"/g, '""') + '"', r.leads, r.appointments]);
+    });
+    var blob = new Blob([rows.map(function (r) { return r.join(","); }).join("\n")], { type: "text/csv" });
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "madeea-funnel-" + current.range.from + "-to-" + current.range.to + ".csv";
+    a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 2000);
+  });
 
   window.addEventListener("resize", function () { if (current) render(current); });
-
-  if (key()) { $("app").hidden = false; load(); } else { showGate(""); }
+  if (key()) { $("app").hidden = false; load(); } else { gate(""); }
 })();
 </script>
 </body>

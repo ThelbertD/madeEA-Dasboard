@@ -53,6 +53,16 @@ There is no build step: the dashboard is a single static HTML file. To exercise
 the API locally you need a runtime that serves `public/` and runs `api/` in one
 process — `vercel dev` does this.
 
+## Panels
+
+- **KPI row** — leads, appointments, booking rate, held rate, cancellations,
+  each against the equally long period before.
+- **Lead acquisition activity** — leads and appointments per day on one shared
+  axis, with a crosshair readout.
+- **Lead funnel** — leads, bookings made, bookings held.
+- **Appointment outcomes** — every booking in the window by status.
+- **Source performance** and **Campaign performance** — paired bars, sorted.
+
 ## What the numbers mean
 
 - **Leads** — contacts created inside the range.
@@ -64,6 +74,10 @@ process — `vercel dev` does this.
 - **Change vs previous** — every tile compares against the equally long period
   immediately before. The selected window and the one before it are fetched in
   one pass, so the comparison costs no extra requests.
+- **Bookings made vs Appointments** — the funnel counts every booking
+  including ones later cancelled; the Appointments tile excludes them. They
+  are deliberately different numbers.
+- **Held rate** — bookings that were not cancelled, over all bookings made.
 - **By campaign** — a booking is credited to the campaign that produced the
   lead, read from the contact's attribution. Bookers who became contacts before
   the window are looked up individually (capped at 60) so they land on their

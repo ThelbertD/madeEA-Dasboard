@@ -325,10 +325,27 @@ export function campaignOf(contact: GhlContact): string {
   return 'Unattributed';
 }
 
+/**
+ * The channel a contact arrived through — a coarser cut than campaign, and
+ * worth its own panel because attribution often carries a source even when no
+ * campaign name survived the journey.
+ */
+export function sourceOf(contact: GhlContact): string {
+  const a = usefulAttribution(contact);
+  if (!a) return 'Unattributed';
+  const s = a.sessionSource || a.utmSource || a.adSource || a.medium || a.referrer;
+  return s ? String(s).trim() : 'Unattributed';
+}
+
 /** Appointments that were cancelled never represent a booking that stood up. */
 function isLiveAppointment(e: GhlEvent): boolean {
-  const status = String(e.appointmentStatus ?? e.status ?? '').toLowerCase();
-  return status !== 'cancelled' && status !== 'canceled' && status !== 'invalid';
+  return !/^(cancelled|canceled|invalid)$/.test(statusOf(e));
+}
+
+/** Normalised appointment status, lowercased, defaulting to a named bucket
+    rather than an empty string so it can be counted and labelled. */
+function statusOf(e: GhlEvent): string {
+  return String(e.appointmentStatus ?? e.status ?? 'unknown').toLowerCase().trim() || 'unknown';
 }
 
 /**
@@ -465,9 +482,11 @@ export async function GET(request: Request): Promise<Response> {
 
     const allContacts = await fetchContacts(token, locationId, prevFromMs, range.toMs);
     const calendarIds = await fetchCalendarIds(token, locationId);
-    const allEvents = (
-      await fetchEvents(token, locationId, calendarIds, prevFromMs, range.toMs)
-    ).filter(isLiveAppointment);
+
+    /* Cancellations are kept here and filtered afterwards: the outcome panel
+       needs them, and they are the most interesting thing on it. */
+    const everyEvent = await fetchEvents(token, locationId, calendarIds, prevFromMs, range.toMs);
+    const allEvents = everyEvent.filter(isLiveAppointment);
 
     const contactMs = (c: GhlContact) => Date.parse(c.dateAdded ?? '');
     const eventMs = (e: GhlEvent) =>
@@ -476,12 +495,21 @@ export async function GET(request: Request): Promise<Response> {
 
     const contacts = allContacts.filter(c => inWindow(contactMs(c), range.fromMs, range.toMs));
     const events = allEvents.filter(e => inWindow(eventMs(e), range.fromMs, range.toMs));
+
+    /* Every booking made in the window, cancelled or not. */
+    const bookedInWindow = everyEvent.filter(e => inWindow(eventMs(e), range.fromMs, range.toMs));
+    const outcomeCounts = new Map<string, number>();
+    for (const e of bookedInWindow) {
+      const s = statusOf(e);
+      outcomeCounts.set(s, (outcomeCounts.get(s) ?? 0) + 1);
+    }
     const prevLeads = allContacts.filter(c => inWindow(contactMs(c), prevFromMs, prevToMs)).length;
     const prevAppointments = allEvents.filter(e => inWindow(eventMs(e), prevFromMs, prevToMs)).length;
 
     /* Appointments inherit the campaign of the contact who booked them, so a
        booking is credited to the ad that produced the lead. */
     const campaignByContact = new Map<string, string>();
+    const lateSources = new Map<string, string>();
     for (const c of contacts) if (c.id) campaignByContact.set(c.id, campaignOf(c));
 
     /* Fill in the bookers who became contacts before this window. Capped,
@@ -496,7 +524,10 @@ export async function GET(request: Request): Promise<Response> {
     const toLookUp = unknown.slice(0, MAX_CONTACT_LOOKUPS);
     for (const id of toLookUp) {
       const c = await fetchContactById(token, id);
-      if (c) campaignByContact.set(id, campaignOf(c));
+      if (c) {
+        campaignByContact.set(id, campaignOf(c));
+        lateSources.set(id, sourceOf(c));
+      }
       await sleep(REQUEST_SPACING_MS);
     }
     const unresolvedBookers = unknown.length - toLookUp.length;
@@ -506,11 +537,19 @@ export async function GET(request: Request): Promise<Response> {
       days.map(d => [d, { date: d, leads: 0, appointments: 0 }]),
     );
     const byCampaign = new Map<string, CampaignRow>();
+    const bySource = new Map<string, CampaignRow>();
+    const sourceByContact = new Map<string, string>();
+    for (const c of contacts) if (c.id) sourceByContact.set(c.id, sourceOf(c));
+    for (const [id, s] of lateSources) if (!sourceByContact.has(id)) sourceByContact.set(id, s);
 
-    const bump = (name: string, key: 'leads' | 'appointments') => {
-      const row = byCampaign.get(name) ?? { campaign: name, leads: 0, appointments: 0 };
+    const bump = (
+      map: Map<string, CampaignRow>,
+      name: string,
+      key: 'leads' | 'appointments',
+    ) => {
+      const row = map.get(name) ?? { campaign: name, leads: 0, appointments: 0 };
       row[key] += 1;
-      byCampaign.set(name, row);
+      map.set(name, row);
     };
 
     for (const c of contacts) {
@@ -518,7 +557,8 @@ export async function GET(request: Request): Promise<Response> {
       if (!Number.isFinite(t)) continue;
       const row = byDay.get(dayKey(t, timeZone));
       if (row) row.leads += 1;
-      bump(campaignOf(c), 'leads');
+      bump(byCampaign, campaignOf(c), 'leads');
+      bump(bySource, sourceOf(c), 'leads');
     }
 
     for (const e of events) {
@@ -527,7 +567,13 @@ export async function GET(request: Request): Promise<Response> {
       const row = byDay.get(dayKey(t, timeZone));
       if (row) row.appointments += 1;
       bump(
+        byCampaign,
         (e.contactId && campaignByContact.get(e.contactId)) || 'Booker not resolved',
+        'appointments',
+      );
+      bump(
+        bySource,
+        (e.contactId && sourceByContact.get(e.contactId)) || 'Booker not resolved',
         'appointments',
       );
     }
@@ -551,7 +597,14 @@ export async function GET(request: Request): Promise<Response> {
         appointments: prevAppointments,
         bookingRate: prevLeads > 0 ? prevAppointments / prevLeads : null,
       },
+      /* Every booking made in the window, by status. Cancellations are in here
+         on purpose — they are excluded from the appointment count but are the
+         most useful thing on the outcomes panel. */
+      outcomes: [...outcomeCounts.entries()]
+        .map(([status, count]) => ({ status, count }))
+        .sort((a, b) => b.count - a.count),
       byDay: days.map(d => byDay.get(d)!),
+      bySource: [...bySource.values()].sort((a, b) => b.leads - a.leads),
       byCampaign: [...byCampaign.values()].sort((a, b) => b.leads - a.leads),
       meta: {
         calendarsScanned: calendarIds.length,
