@@ -1,0 +1,13 @@
+# Secrets — the GHL token lives here and must never be committed.
+.env
+.env*.local
+
+node_modules/
+.vercel
+*.log
+*.tsbuildinfo
+
+# OS junk
+.DS_Store
+Thumbs.db
+Desktop.ini

@@ -1,0 +1,14 @@
+{
+  "name": "madeea-funnel-dashboard",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Private dashboard: Meta ads to leads to appointments, read from GoHighLevel.",
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^26.3.0",
+    "typescript": "~5.9"
+  }
+}
