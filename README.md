@@ -15,6 +15,28 @@ would hand the CRM to any visitor. The token stays in an environment variable
 on the server and the browser only ever receives counts. GHL also refuses
 cross-origin browser calls, so the proxy is required either way.
 
+## Deploying
+
+**This cannot run on GitHub Pages.** Pages serves static files only, and the
+dashboard gets every number from `/api/ghl-metrics`, a serverless function.
+On Pages you get the login box and then a failed fetch on every request.
+Hosting the API elsewhere and pointing the page at it would mean opening the
+route to cross-origin callers, which is a worse trade than it sounds.
+
+Deploy to a host that runs both the static file and the function. Vercel is
+what `vercel.json` is set up for:
+
+1. vercel.com/new, import this repository.
+2. Framework preset **Other**. Leave the build command empty; output
+   directory `public`. `vercel.json` already says so.
+3. Add the environment variables below before the first deploy, or the route
+   returns 503 until you do.
+4. Deploy, then open `/api/ghl-metrics?check=1&key=YOUR_KEY` to confirm the
+   GHL scopes before trusting any figure on the page.
+
+If GitHub Pages is enabled on this repo, turn it off: it can only ever serve
+a broken copy.
+
 ## Setup
 
 1. **Create the Private Integration** — GHL → Settings → Private Integrations.
