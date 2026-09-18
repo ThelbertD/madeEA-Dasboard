@@ -1,266 +1,23 @@
-<!doctype html>
-<html lang="en" data-theme="dark">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="robots" content="noindex, nofollow">
-<title>MadeEA Analytics</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Schibsted+Grotesk:wght@600;700;800;900&display=swap">
-<style>
 /* ==========================================================================
-   A deliberately single-theme dark console. Every colour is painted
-   explicitly, so the page holds whatever the viewer's OS is set to.
-
-   SERIES COLOURS WERE VALIDATED, NOT PICKED BY EYE
-   Against the #0E1726 surface, through the palette checker:
-     leads #3987E5 / appointments #D95926 — all checks pass, worst adjacent
-       CVD dE 30.7 (protan), normal-vision 36.8.
-     confirmed #159C86 / cancelled #CE4A4A — all checks pass, no warning.
-       An amber third status was tried and rejected: amber against red failed
-       both the CVD floor (dE 5.9) and the normal-vision floor (dE 12.7).
-   Status colours stay separate from the series colours and are never reused.
-
-   Colour follows the entity: leads blue everywhere, appointments orange
-   everywhere. Changing the range never repaints them.
+   MadeEA Analytics — dashboard behaviour.
+   No framework, no build step, no dependencies, same as the funnel pages.
    ========================================================================== */
-:root{
-  color-scheme: dark;
-  --bg:#0A1119;
-  --surface:#0E1726;
-  --surface-2:#131F31;
-  --line:#1E2D42;
-  --line-soft:#182539;
-  --ink:#E8EFF7;
-  --ink-2:#9FB2C8;
-  --ink-3:#6B819B;
-  --leads:#3987E5;
-  --appts:#D95926;
-  --ok:#159C86;
-  --bad:#CE4A4A;
-  --accent:#FD5811;
-}
-*{box-sizing:border-box;}
-html,body{margin:0;background:var(--bg);}
-body{
-  color:var(--ink);
-  font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-  font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;
-}
-h1,h2,h3{font-family:"Schibsted Grotesk",Inter,sans-serif;margin:0;letter-spacing:-.015em;}
-:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px;}
-[hidden]{display:none !important;}
-.wrap{max-width:1360px;margin:0 auto;padding:22px 20px 60px;}
-
-/* ---------- header ---------- */
-.top{display:flex;flex-wrap:wrap;gap:12px 18px;align-items:flex-start;justify-content:space-between;}
-.top h1{font-size:21px;font-weight:800;}
-.top .sub{color:var(--ink-3);font-size:13px;margin-top:3px;}
-.tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
-
-button,input[type=date],input[type=password]{font:inherit;}
-.btn{
-  display:inline-flex;align-items:center;gap:7px;cursor:pointer;
-  background:var(--surface-2);color:var(--ink);border:1px solid var(--line);
-  border-radius:8px;padding:8px 13px;font-size:13px;font-weight:600;min-height:36px;
-}
-.btn:hover{border-color:#2B3E58;}
-.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;justify-content:center;}
-input[type=date],input[type=password]{
-  background:var(--surface-2);color:var(--ink);border:1px solid var(--line);
-  border-radius:8px;padding:8px 11px;font-size:13px;min-height:36px;
-}
-.seg{display:inline-flex;background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:2px;}
-.seg button{
-  background:transparent;border:0;color:var(--ink-3);cursor:pointer;
-  padding:6px 12px;border-radius:6px;font-size:12.5px;font-weight:600;
-}
-.seg button[aria-pressed=true]{background:var(--leads);color:#fff;}
-
-/* ---------- KPI row ---------- */
-.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-top:20px;}
-.kpi{background:var(--surface);border:1px solid var(--line);border-radius:11px;padding:15px 16px;}
-.kpi .k{display:flex;align-items:center;gap:7px;font-size:10.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3);}
-.kpi .dot{width:8px;height:8px;border-radius:2px;flex:none;}
-.kpi .v{font-family:"Schibsted Grotesk",sans-serif;font-size:27px;font-weight:800;line-height:1.1;margin-top:9px;letter-spacing:-.02em;}
-.kpi .d{display:flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;margin-top:7px;min-height:17px;}
-.kpi .d.up{color:var(--ok);} .kpi .d.down{color:var(--bad);} .kpi .d.flat{color:var(--ink-3);}
-.kpi .d em{color:var(--ink-3);font-style:normal;font-weight:500;}
-
-/* ---------- panels ---------- */
-.panel{background:var(--surface);border:1px solid var(--line);border-radius:11px;padding:18px;margin-top:14px;}
-.panel h2{font-size:14.5px;font-weight:700;}
-.panel .hint{color:var(--ink-3);font-size:12.5px;margin-top:2px;}
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px;}
-.grid2 .panel{margin-top:0;}
-
-.legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:12px;}
-.legend span{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-2);font-weight:500;}
-.legend i{width:9px;height:9px;border-radius:2px;}
-
-figure{margin:12px 0 0;}
-svg{display:block;width:100%;height:auto;overflow:visible;}
-.gridline{stroke:var(--line-soft);stroke-width:1;}
-.ax{fill:var(--ink-3);font-size:10.5px;font-family:Inter,sans-serif;}
-.ax.n{font-variant-numeric:tabular-nums;}
-.dl{font-family:"Schibsted Grotesk",sans-serif;font-size:11px;font-weight:800;font-variant-numeric:tabular-nums;}
-
-/* funnel */
-.fn{display:flex;flex-direction:column;gap:11px;margin-top:14px;}
-.fnrow{display:grid;grid-template-columns:112px 1fr 96px;gap:12px;align-items:center;}
-.fnrow .l{font-size:12.5px;color:var(--ink-2);font-weight:500;}
-.fntrack{display:block;background:var(--line-soft);border-radius:4px;height:22px;overflow:hidden;}
-.fnbar{display:block;height:100%;border-radius:4px;}
-.fnrow .v{text-align:right;font-family:"Schibsted Grotesk",sans-serif;font-weight:800;font-size:14px;font-variant-numeric:tabular-nums;}
-.fnrow .v em{color:var(--ink-3);font-style:normal;font-weight:600;font-size:12px;margin-left:7px;}
-
-/* outcomes */
-.oc{display:flex;height:30px;border-radius:6px;overflow:hidden;margin-top:14px;gap:2px;background:var(--line-soft);}
-.oc span{display:block;height:100%;}
-.ocleg{display:flex;flex-wrap:wrap;gap:16px;margin-top:12px;}
-.ocleg div{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--ink-2);}
-.ocleg i{width:9px;height:9px;border-radius:2px;}
-.ocleg b{font-family:"Schibsted Grotesk",sans-serif;font-variant-numeric:tabular-nums;}
-.ocleg u{text-decoration:none;color:var(--ink-3);}
-
-/* tooltip */
-.tt{
-  position:fixed;pointer-events:none;z-index:30;opacity:0;transition:opacity .08s;
-  background:var(--surface-2);border:1px solid var(--line);border-radius:9px;
-  padding:9px 11px;font-size:12.5px;min-width:152px;box-shadow:0 14px 34px rgba(0,0,0,.55);
-}
-.tt .d{font-weight:700;margin-bottom:6px;}
-.tt .r{display:flex;align-items:center;gap:10px;justify-content:space-between;margin:0;}
-.tt .r b{font-variant-numeric:tabular-nums;}
-.tt i{width:8px;height:8px;border-radius:2px;display:inline-block;}
-.tt p{margin:0;}
-
-/* tables */
-details{margin-top:14px;}
-summary{cursor:pointer;font-size:12.5px;color:var(--ink-3);font-weight:500;}
-.scroll{overflow-x:auto;margin-top:10px;}
-table{border-collapse:collapse;width:100%;font-size:12.5px;}
-th,td{text-align:left;padding:8px 11px;border-bottom:1px solid var(--line-soft);white-space:nowrap;}
-th{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);}
-td.n,th.n{text-align:right;font-variant-numeric:tabular-nums;}
-
-/* states */
-.note{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:14px 16px;margin-top:16px;font-size:13px;}
-.note.err{border-color:var(--bad);}
-.note b{display:block;margin-bottom:3px;}
-.empty{color:var(--ink-3);font-size:12.5px;padding:16px 0;margin:0;}
-.gate{max-width:400px;margin:12vh auto;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:26px;}
-.gate h1{font-size:19px;}
-.gate p{color:var(--ink-3);font-size:13px;margin:7px 0 16px;}
-.gate form{display:flex;flex-direction:column;gap:9px;}
-
-@media (max-width:1120px){ .kpis{grid-template-columns:repeat(3,1fr);} }
-@media (max-width:860px){ .kpis{grid-template-columns:repeat(2,1fr);} .grid2{grid-template-columns:1fr;} }
-@media (max-width:560px){ .kpis{grid-template-columns:1fr;} }
-@media (prefers-reduced-motion:reduce){*{transition:none !important;}}
-</style>
-</head>
-<body>
-
-<div class="gate" id="gate" hidden>
-  <h1>MadeEA Analytics</h1>
-  <p>This report is private. Enter the dashboard key to continue.</p>
-  <form id="gateForm">
-    <input type="password" id="keyInput" placeholder="Dashboard key" autocomplete="current-password" required>
-    <button class="btn primary" type="submit">Open</button>
-    <p class="note err" id="gateErr" hidden></p>
-  </form>
-</div>
-
-<div class="wrap" id="app" hidden>
-  <header class="top">
-    <div>
-      <h1>Analytics</h1>
-      <p class="sub" id="sub">Where leads come from, and how many turn into booked calls.</p>
-    </div>
-    <div class="tools">
-      <div class="seg" role="group" aria-label="Date range">
-        <button type="button" data-days="7">7 days</button>
-        <button type="button" data-days="30" aria-pressed="true">30 days</button>
-        <button type="button" data-days="90">90 days</button>
-      </div>
-      <input type="date" id="from" aria-label="From">
-      <input type="date" id="to" aria-label="To">
-      <button class="btn" type="button" id="apply">Apply</button>
-      <button class="btn" type="button" id="csv">Export CSV</button>
-      <button class="btn" type="button" id="signout">Sign out</button>
-    </div>
-  </header>
-
-  <div id="msg"></div>
-
-  <section class="kpis" id="kpis" hidden>
-    <div class="kpi"><p class="k"><i class="dot" style="background:var(--leads)"></i>Leads</p><p class="v" id="kLeads">—</p><p class="d" id="dLeads"></p></div>
-    <div class="kpi"><p class="k"><i class="dot" style="background:var(--appts)"></i>Appointments</p><p class="v" id="kAppts">—</p><p class="d" id="dAppts"></p></div>
-    <div class="kpi"><p class="k">Booking rate</p><p class="v" id="kRate">—</p><p class="d" id="dRate"></p></div>
-    <div class="kpi"><p class="k">Held rate</p><p class="v" id="kHeld">—</p><p class="d" id="nHeld"></p></div>
-    <div class="kpi"><p class="k">Cancelled</p><p class="v" id="kCanc">—</p><p class="d" id="nCanc"></p></div>
-  </section>
-
-  <section class="panel" id="pDay" hidden>
-    <h2>Lead acquisition activity</h2>
-    <p class="hint">Leads and booked calls across the window. Both count people, so they share one axis.</p>
-    <div class="legend">
-      <span><i style="background:var(--leads)"></i>Leads</span>
-      <span><i style="background:var(--appts)"></i>Appointments</span>
-    </div>
-    <figure><svg id="sDay" role="img" aria-label="Leads and appointments per day"></svg></figure>
-    <details><summary>View as table</summary><div class="scroll"><table id="tDay"></table></div></details>
-  </section>
-
-  <div class="grid2">
-    <section class="panel" id="pFunnel" hidden>
-      <h2>Lead funnel</h2>
-      <p class="hint">What happens between arriving and sitting on a call.</p>
-      <div class="fn" id="funnel"></div>
-    </section>
-
-    <section class="panel" id="pOutcome" hidden>
-      <h2>Appointment outcomes</h2>
-      <p class="hint">Every booking made in this window, by status.</p>
-      <div id="outcome"></div>
-    </section>
-  </div>
-
-  <div class="grid2">
-    <section class="panel" id="pSource" hidden>
-      <h2>Source performance</h2>
-      <p class="hint">Volume and booking quality by channel.</p>
-      <div class="legend">
-        <span><i style="background:var(--leads)"></i>Leads</span>
-        <span><i style="background:var(--appts)"></i>Appointments</span>
-      </div>
-      <figure><svg id="sSource" role="img" aria-label="Leads and appointments by source"></svg></figure>
-    </section>
-
-    <section class="panel" id="pCamp" hidden>
-      <h2>Campaign performance</h2>
-      <p class="hint">Bookings are credited to the campaign that produced the lead.</p>
-      <div class="legend">
-        <span><i style="background:var(--leads)"></i>Leads</span>
-        <span><i style="background:var(--appts)"></i>Appointments</span>
-      </div>
-      <figure><svg id="sCamp" role="img" aria-label="Leads and appointments by campaign"></svg></figure>
-      <details><summary>View as table</summary><div class="scroll"><table id="tCamp"></table></div></details>
-    </section>
-  </div>
-</div>
-
-<div class="tt" id="tt" role="status" aria-live="off"></div>
-
-<script>
 (function () {
   "use strict";
 
-  var API = "/api/ghl-metrics";
+  var CFG = window.MADEEA_DASHBOARD_CONFIG || {};
   var STORE = "madeeaDashKey";
   var NS = "http://www.w3.org/2000/svg";
+
+  /* Where the numbers come from. An empty apiBase means "same origin", which
+     is correct on Vercel, where the function is deployed next to the page. */
+  var BASE = String(CFG.apiBase || "").replace(/\/$/, "");
+  var API = BASE + "/api/ghl-metrics";
+
+  /* GitHub Pages cannot run the function, so an unset apiBase there is a
+     misconfiguration, not a transient failure. Saying so beats letting the
+     user watch a fetch 404 against a path that will never exist. */
+  var NEEDS_API_BASE = !BASE && /\.github\.io$/i.test(location.hostname);
 
   var $ = function (id) { return document.getElementById(id); };
   var el = function (n, a) {
@@ -278,6 +35,24 @@ td.n,th.n{text-align:right;font-variant-numeric:tabular-nums;}
   var iso = function (d) { return d.toISOString().slice(0, 10); };
   var pct = function (n) { return Math.round(n * 1000) / 10 + "%"; };
   var DASH = "—";
+
+  /* ─────────── brand chrome ─────────── */
+  (function chrome() {
+    var bar = document.querySelector("[data-topbar]");
+    if (!bar) return;
+    bar.innerHTML =
+      '<div class="inner">' +
+        '<span class="brand">' +
+          '<svg viewBox="0 0 1210 1456" aria-hidden="true">' +
+            '<polygon points="0,0 306,0 306,926 0,1106"></polygon>' +
+            '<polygon points="452,0 758,0 758,1171 452,1351"></polygon>' +
+            '<polygon points="904,0 1210,0 1210,1276 904,1456"></polygon>' +
+          '</svg>' +
+          '<span class="wordmark">Made&thinsp;/&thinsp;EA</span>' +
+        '</span>' +
+        '<span class="trust">' + esc(CFG.trustLine || "Private report") + "</span>" +
+      "</div>";
+  })();
 
   /* ─────────── auth ─────────── */
   function key() { try { return sessionStorage.getItem(STORE) || ""; } catch (e) { return ""; } }
@@ -330,6 +105,16 @@ td.n,th.n{text-align:right;font-variant-numeric:tabular-nums;}
 
   function load() {
     if (!key()) { gate(""); return; }
+
+    if (NEEDS_API_BASE) {
+      panels(false);
+      msg("<b>This copy has no API to talk to</b>" +
+          "GitHub Pages serves static files only, so the metrics function is not running beside this page. " +
+          "Deploy <code>api/</code> to Vercel, then set <code>apiBase</code> in <code>assets/config.js</code> " +
+          "to that deployment's URL.", true);
+      return;
+    }
+
     msg("Loading…", false);
     var tz = "UTC";
     try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"; } catch (e) {}
@@ -351,7 +136,14 @@ td.n,th.n{text-align:right;font-variant-numeric:tabular-nums;}
       })
       .catch(function () {
         panels(false);
-        msg("<b>Could not reach the server</b>Check the deployment is live, then try again.", true);
+        /* A cross-origin deployment fails here for one of two reasons, and the
+           browser will not say which: the deployment is down, or its
+           ALLOWED_ORIGINS does not list this page. Name both. */
+        msg("<b>Could not reach the server</b>" +
+            (BASE
+              ? "Check <code>" + esc(BASE) + "</code> is live, and that its <code>ALLOWED_ORIGINS</code> " +
+                "includes <code>" + esc(location.origin) + "</code>."
+              : "Check the deployment is live, then try again."), true);
       });
   }
 
@@ -436,7 +228,7 @@ td.n,th.n{text-align:right;font-variant-numeric:tabular-nums;}
 
   /* A stacked bar rather than a donut. With two statuses a ring is the wrong
      form, and a ring makes the first and last segments adjacent — which is
-     where the rejected amber/red pair failed its separation check. */
+     where the rejected green/red pair failed its separation check. */
   function outcomePanel(outcomes, booked) {
     var box = $("outcome");
     if (!booked) { box.innerHTML = '<p class="empty">No bookings in this window.</p>'; return; }
@@ -486,8 +278,10 @@ td.n,th.n{text-align:right;font-variant-numeric:tabular-nums;}
         points: rows.map(function (r, i) { return x(i) + "," + y(r[f]); }).join(" "),
         fill: "none", stroke: c, "stroke-width": 2, "stroke-linejoin": "round", "stroke-linecap": "round"
       }));
+      /* Markers are knocked out against the panel, not the page: these sit on
+         white cards, so a cream halo would show as a dirty ring. */
       if (rows.length <= 45) rows.forEach(function (r, i) {
-        svg.appendChild(el("circle", { cx: x(i), cy: y(r[f]), r: 4, fill: c, stroke: css("--surface"), "stroke-width": 2 }));
+        svg.appendChild(el("circle", { cx: x(i), cy: y(r[f]), r: 4, fill: c, stroke: css("--white"), "stroke-width": 2 }));
       });
       var last = rows[rows.length - 1];
       svg.appendChild(txt("text", { x: x(rows.length - 1) + 9, y: y(last[f]) + 4, fill: c, class: "dl" }, last[f]));
@@ -519,8 +313,8 @@ td.n,th.n{text-align:right;font-variant-numeric:tabular-nums;}
     svg.addEventListener("touchend", hide);
   }
 
-  /* Ranked paired bars, sorted by leads. 4px rounded data-ends, a 2px gap
-     between the pair, direct labels, per-row hover. */
+  /* Ranked paired bars, sorted by leads. Square ends to match the brand's 2px
+     geometry, a 2px gap between the pair, direct labels, per-row hover. */
   function barChart(svg, rows, limit) {
     svg.textContent = "";
     if (!rows.length) {
@@ -544,7 +338,7 @@ td.n,th.n{text-align:right;font-variant-numeric:tabular-nums;}
       svg.appendChild(lab);
 
       [["leads", css("--leads"), gy], ["appointments", css("--appts"), gy + BAR + GAP]].forEach(function (s) {
-        svg.appendChild(el("rect", { x: LBL, y: s[2], width: w(r[s[0]]), height: BAR, rx: 4, fill: s[1] }));
+        svg.appendChild(el("rect", { x: LBL, y: s[2], width: w(r[s[0]]), height: BAR, fill: s[1] }));
         svg.appendChild(txt("text", { x: LBL + w(r[s[0]]) + 7, y: s[2] + BAR - 2, fill: s[1], class: "dl" }, r[s[0]]));
       });
 
@@ -603,9 +397,8 @@ td.n,th.n{text-align:right;font-variant-numeric:tabular-nums;}
     setTimeout(function () { URL.revokeObjectURL(a.href); }, 2000);
   });
 
+  $("year").textContent = new Date().getFullYear();
+
   window.addEventListener("resize", function () { if (current) render(current); });
   if (key()) { $("app").hidden = false; load(); } else { gate(""); }
 })();
-</script>
-</body>
-</html>

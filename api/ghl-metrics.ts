@@ -17,6 +17,11 @@
  *                       whole funnel's numbers are public to anyone with the
  *                       URL.
  *
+ *   ALLOWED_ORIGINS     comma-separated origins allowed to call this route from
+ *                       a browser. Needed because the dashboard is served from
+ *                       GitHub Pages while this runs on Vercel. Defaults to
+ *                       https://thelbertd.github.io.
+ *
  * REQUIRED SCOPES on the Private Integration
  *   contacts.readonly, calendars.readonly, calendars/events.readonly
  *   locations.readonly is not needed.
@@ -420,9 +425,64 @@ function eachDay(fromMs: number, toMs: number, timeZone: string): string[] {
 const cache = new Map<string, { at: number; payload: unknown }>();
 const CACHE_TTL_MS = 60 * 1000;
 
-/* ─────────────────────────── handler ─────────────────────────── */
+/* ─────────────────────────── CORS ───────────────────────────
+   The dashboard is served from GitHub Pages and this function runs on Vercel,
+   so every request from the page is cross-origin. That is allowed only for
+   origins named here: an open `*` would let any site on the internet put up its
+   own page, prompt a MadeEA person for the dashboard key, and read the funnel
+   back. Set ALLOWED_ORIGINS to override (comma separated, scheme + host, no
+   trailing slash).
+
+   There is no Access-Control-Allow-Credentials, deliberately. Auth is the
+   explicit x-dashboard-key header, never a cookie, so the browser has no
+   ambient credential to leak here.
+
+   Sending that header makes this a non-simple request, so the browser fires a
+   preflight OPTIONS first — hence the OPTIONS export. Without it the preflight
+   404s and every fetch fails before the GET is ever reached. */
+const DEFAULT_ALLOWED_ORIGINS = ['https://thelbertd.github.io'];
+
+function allowedOrigins(): string[] {
+  const raw = process.env['ALLOWED_ORIGINS'];
+  if (!raw) return DEFAULT_ALLOWED_ORIGINS;
+  return raw
+    .split(',')
+    .map(s => s.trim().replace(/\/$/, ''))
+    .filter(Boolean);
+}
+
+/* Vary: Origin on every response, including the ones that get no
+   Allow-Origin. Without it a CDN can cache the permissive answer given to an
+   allowed origin and hand it to a different one. */
+function corsHeaders(request: Request): Record<string, string> {
+  const origin = request.headers.get('origin');
+  if (!origin) return { Vary: 'Origin' };
+  if (!allowedOrigins().includes(origin)) return { Vary: 'Origin' };
+  return {
+    Vary: 'Origin',
+    'Access-Control-Allow-Origin': origin,
+    'Access-Control-Allow-Methods': 'GET, OPTIONS',
+    'Access-Control-Allow-Headers': 'x-dashboard-key, content-type',
+    'Access-Control-Max-Age': '86400',
+  };
+}
+
+export async function OPTIONS(request: Request): Promise<Response> {
+  return new Response(null, { status: 204, headers: corsHeaders(request) });
+}
 
 export async function GET(request: Request): Promise<Response> {
+  const response = await handleGet(request);
+  const headers = new Headers(response.headers);
+  for (const [name, value] of Object.entries(corsHeaders(request))) {
+    headers.set(name, value);
+  }
+  return new Response(response.body, { status: response.status, headers });
+}
+
+/* ─────────────────────────── handler ─────────────────────────── */
+
+async function handleGet(request: Request): Promise<Response> {
   const url = new URL(request.url);
 
   const token = process.env['GHL_PRIVATE_TOKEN'];

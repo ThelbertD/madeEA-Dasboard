@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>MadeEA Analytics</title>
+<link rel="icon" type="image/png" href="https://madeeas.com/images/logo-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="assets/dashboard.css">
+</head>
+<body>
+
+<header class="topbar" data-topbar></header>
+
+<div class="gate" id="gate" hidden>
+  <div class="card">
+    <p class="eyebrow">MadeEA Analytics</p>
+    <h1>This report is private.</h1>
+    <p>Enter the dashboard key to continue.</p>
+    <form id="gateForm">
+      <input type="password" id="keyInput" placeholder="Dashboard key" autocomplete="current-password" required>
+      <button class="btn primary" type="submit">Open report</button>
+      <p class="note err" id="gateErr" hidden></p>
+    </form>
+  </div>
+</div>
+
+<div class="wrap" id="app" hidden>
+  <header class="top">
+    <div>
+      <p class="eyebrow">Paid funnel</p>
+      <h1>Ads to leads to booked calls.</h1>
+      <p class="sub" id="sub">Where leads come from, and how many turn into booked calls.</p>
+    </div>
+    <div class="tools">
+      <div class="seg" role="group" aria-label="Date range">
+        <button type="button" data-days="7">7 days</button>
+        <button type="button" data-days="30" aria-pressed="true">30 days</button>
+        <button type="button" data-days="90">90 days</button>
+      </div>
+      <input type="date" id="from" aria-label="From">
+      <input type="date" id="to" aria-label="To">
+      <button class="btn" type="button" id="apply">Apply</button>
+      <button class="btn" type="button" id="csv">Export CSV</button>
+      <button class="btn" type="button" id="signout">Sign out</button>
+    </div>
+  </header>
+
+  <div id="msg"></div>
+
+  <section class="kpis" id="kpis" hidden>
+    <div class="kpi"><p class="k"><i class="dot" style="background:var(--leads)"></i>Leads</p><p class="v" id="kLeads">—</p><p class="d" id="dLeads"></p></div>
+    <div class="kpi"><p class="k"><i class="dot" style="background:var(--appts)"></i>Appointments</p><p class="v" id="kAppts">—</p><p class="d" id="dAppts"></p></div>
+    <div class="kpi"><p class="k">Booking rate</p><p class="v" id="kRate">—</p><p class="d" id="dRate"></p></div>
+    <div class="kpi"><p class="k">Held rate</p><p class="v" id="kHeld">—</p><p class="d" id="nHeld"></p></div>
+    <div class="kpi"><p class="k">Cancelled</p><p class="v" id="kCanc">—</p><p class="d" id="nCanc"></p></div>
+  </section>
+
+  <section class="panel" id="pDay" hidden>
+    <h2>Lead acquisition activity</h2>
+    <p class="hint">Leads and booked calls across the window. Both count people, so they share one axis.</p>
+    <div class="legend">
+      <span><i style="background:var(--leads)"></i>Leads</span>
+      <span><i style="background:var(--appts)"></i>Appointments</span>
+    </div>
+    <figure><svg id="sDay" role="img" aria-label="Leads and appointments per day"></svg></figure>
+    <details><summary>View as table</summary><div class="scroll"><table id="tDay"></table></div></details>
+  </section>
+
+  <div class="grid2">
+    <section class="panel" id="pFunnel" hidden>
+      <h2>Lead funnel</h2>
+      <p class="hint">What happens between arriving and sitting on a call.</p>
+      <div class="fn" id="funnel"></div>
+    </section>
+
+    <section class="panel" id="pOutcome" hidden>
+      <h2>Appointment outcomes</h2>
+      <p class="hint">Every booking made in this window, by status.</p>
+      <div id="outcome"></div>
+    </section>
+  </div>
+
+  <div class="grid2">
+    <section class="panel" id="pSource" hidden>
+      <h2>Source performance</h2>
+      <p class="hint">Volume and booking quality by channel.</p>
+      <div class="legend">
+        <span><i style="background:var(--leads)"></i>Leads</span>
+        <span><i style="background:var(--appts)"></i>Appointments</span>
+      </div>
+      <figure><svg id="sSource" role="img" aria-label="Leads and appointments by source"></svg></figure>
+    </section>
+
+    <section class="panel" id="pCamp" hidden>
+      <h2>Campaign performance</h2>
+      <p class="hint">Bookings are credited to the campaign that produced the lead.</p>
+      <div class="legend">
+        <span><i style="background:var(--leads)"></i>Leads</span>
+        <span><i style="background:var(--appts)"></i>Appointments</span>
+      </div>
+      <figure><svg id="sCamp" role="img" aria-label="Leads and appointments by campaign"></svg></figure>
+      <details><summary>View as table</summary><div class="scroll"><table id="tCamp"></table></div></details>
+    </section>
+  </div>
+
+  <footer class="foot">
+    <p>&copy; <span id="year"></span> MadeEA &middot; We give founders their mind back.</p>
+    <p>Read from GoHighLevel. Counts only — no contact details leave the server.</p>
+  </footer>
+</div>
+
+<div class="tt" id="tt" role="status" aria-live="off"></div>
+
+<script src="assets/config.js"></script>
+<script src="assets/dashboard.js"></script>
+</body>
+</html>
