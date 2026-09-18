@@ -73,6 +73,9 @@ the dashboard. `.nojekyll` turns that off.
    - `contacts.readonly`
    - `calendars.readonly`
    - `calendars/events.readonly`
+   - `opportunities.readonly` — for the Campaign pipeline panel. Without it
+     every other panel still works and that one panel is hidden, rather than
+     the whole report failing.
 2. **Set environment variables** in Vercel → Settings → Environment Variables
    (see `.env.example`):
 
@@ -82,6 +85,7 @@ the dashboard. `.nojekyll` turns that off.
    | `GHL_LOCATION_ID` | the sub-account id, visible in the GHL dashboard URL |
    | `DASHBOARD_KEY` | passphrase the dashboard sends; without it the route refuses to serve |
    | `GHL_CALENDAR_IDS` | optional, comma separated; limits which calendars count |
+   | `GHL_PIPELINE_NAME` | optional; the pipeline behind the Campaign pipeline panel. Defaults to `MadeEA Ads Leads` |
    | `ALLOWED_ORIGINS` | optional, comma separated; browser origins allowed to call the route. Defaults to `https://thelbertd.github.io` |
 
 3. **Deploy**, then confirm the integration before trusting any numbers:
@@ -118,6 +122,11 @@ in one process — `vercel dev` does this.
   axis, with a crosshair readout.
 - **Lead funnel** — leads, bookings made, bookings held.
 - **Appointment outcomes** — every booking in the window by status.
+- **Campaign pipeline** — where the campaign's opportunities stand now, in the
+  stage order GHL defines, with how many entered during the selected range.
+  This one is a snapshot, not a window: a deal created in July still occupies a
+  stage today, and "where everyone is now" is a different question from "who
+  arrived this month". Both numbers are shown rather than picking one.
 - **Source performance** and **Campaign performance** — paired bars, sorted.
 
 ## What the numbers mean

@@ -97,7 +97,7 @@
 
   /* ─────────── load ─────────── */
   var current = null;
-  var PANELS = ["kpis", "pDay", "pFunnel", "pOutcome", "pSource", "pCamp"];
+  var PANELS = ["kpis", "pDay", "pFunnel", "pOutcome", "pPipe", "pSource", "pCamp"];
   function panels(show) { PANELS.forEach(function (id) { $(id).hidden = !show; }); }
   function msg(html, bad) {
     $("msg").innerHTML = html ? '<div class="note' + (bad ? " err" : "") + '">' + html + "</div>" : "";
@@ -182,6 +182,7 @@
     dayTable($("tDay"), d.byDay);
     funnel(d, booked, cancelled);
     outcomePanel(outcomes, booked);
+    pipelinePanel(d.pipeline);
     barChart($("sSource"), d.bySource || [], 6);
     barChart($("sCamp"), d.byCampaign || [], 6);
     campTable($("tCamp"), d.byCampaign || []);
@@ -224,6 +225,59 @@
         '<span class="fntrack"><span class="fnbar" style="width:' + w + "%;background:" + s.c + '"></span></span>' +
         '<span class="v">' + s.v.toLocaleString() + (s.note ? "<em>" + s.note + "</em>" : "") + "</span></div>";
     }).join("");
+  }
+
+  /* The GHL pipeline the ad spend lands in, in the stage order GHL defines.
+     Stages are NOT sorted by size: a funnel whose steps swap places whenever a
+     deal moves is not a funnel.
+
+     Every stage bar is one colour, because they are one series — opportunities
+     by stage. The old dark build tinted stages individually, which needed the
+     code to recognise stage names, and a rename in GHL then silently recoloured
+     the panel. Won and lost are reported underneath as counts instead, where
+     they can use the status colours honestly. */
+  function pipelinePanel(p) {
+    var host = $("pPipe");
+    if (!p) { host.hidden = true; return; }   /* opportunities scope missing */
+    host.hidden = false;
+    var box = $("pipeline");
+
+    if (!p.found) {
+      box.innerHTML =
+        '<div class="note err"><b>No pipeline named &ldquo;' + esc(p.name) + '&rdquo;</b>' +
+        "Rename it in GHL, or set <code>GHL_PIPELINE_NAME</code> to one of these: " +
+        (p.available || []).map(function (n) { return "<code>" + esc(n) + "</code>"; }).join(", ") +
+        "</div>";
+      return;
+    }
+
+    var stages = p.stages || [];
+    if (!stages.length) { box.innerHTML = '<p class="empty">This pipeline has no stages.</p>'; return; }
+
+    /* Scaled against the busiest stage rather than the first. A pipeline is not
+       always widest at the top — a backlog sitting in the middle is exactly the
+       thing worth seeing. */
+    var max = stages.reduce(function (m, s) { return Math.max(m, s.count); }, 0);
+
+    box.innerHTML =
+      '<div class="fn">' + stages.map(function (s) {
+        var w = max > 0 ? Math.max(s.count > 0 ? 2 : 0, (s.count / max) * 100) : 0;
+        return '<div class="fnrow"><span class="l">' + esc(s.stage) + "</span>" +
+          '<span class="fntrack"><span class="fnbar" style="width:' + w +
+            "%;background:" + css("--leads") + '"></span></span>' +
+          '<span class="v">' + s.count.toLocaleString() +
+          (s.newInRange ? "<em>+" + s.newInRange + " new</em>" : "") +
+          "</span></div>";
+      }).join("") + "</div>" +
+      '<div class="ocleg" style="margin-top:16px">' +
+        '<div><i style="background:' + css("--leads") + '"></i>Open <b>' + p.open + "</b></div>" +
+        '<div><i style="background:' + css("--ok") + '"></i>Won <b>' + p.won + "</b></div>" +
+        '<div><i style="background:' + css("--bad") + '"></i>Lost <b>' + p.lost + "</b></div>" +
+        "<div><u>" + p.total + " in pipeline, " + p.newInRange + " entered this range</u></div>" +
+      "</div>" +
+      (p.capped
+        ? '<div class="note err"><b>Partial count</b>This pipeline hit the page cap, so stages are undercounted.</div>'
+        : "");
   }
 
   /* A stacked bar rather than a donut. With two statuses a ring is the wrong

@@ -45,6 +45,17 @@ const REQUEST_SPACING_MS = 120;
 
 const MAX_CONTACT_LOOKUPS = 60;
 
+/* The pipeline panel is a snapshot of the whole pipeline rather than a window,
+   so it pages until it runs out. The cap exists for the same reason the contact
+   one does — this shares a rate limit with everything else on the page. */
+const MAX_OPPORTUNITY_PAGES = 10;
+const OPPORTUNITY_PAGE_SIZE = 100;
+
+/* Which pipeline the ad spend is supposed to land in. Overridable because the
+   name will not survive forever, and a rename should be a config change rather
+   than a deploy. */
+const DEFAULT_PIPELINE_NAME = 'MadeEA Ads Leads';
+
 const MAX_RANGE_DAYS = 180;
 
 /* Cheap protection against someone brute-forcing DASHBOARD_KEY. */
@@ -52,25 +63,50 @@ const isRateLimited = createRateLimiter(30, 60 * 1000);
 
 /* ─────────────────────────── types ─────────────────────────── */
 
-/* Field names confirmed against this location's live data. Note there is no
-   `utmCampaign`: the campaign name arrives as `campaign`. */
+/* Field names confirmed against this location's live data, re-checked
+   2026-09-18 by reading both contact endpoints and the opportunities endpoint.
+
+   TWO ENDPOINTS, TWO DIFFERENT SHAPES FOR THE SAME FACT
+   This route reads contacts through `POST /contacts/search`, which returns
+   `attributionSource` / `lastAttributionSource` objects whose campaign field is
+   the unprefixed `campaign`. That is what the rest of this file is built on and
+   it is correct.
+
+   `GET /contacts/` and `/opportunities/search` return the same information
+   under different names: an `attributions` ARRAY, with every campaign-shaped
+   field carrying a `utm` prefix — `utmCampaign`, `utmCampaignId`, `utmAdId`,
+   `utmSessionSource`.
+
+   Both spellings are declared here and both are read, so that swapping which
+   endpoint feeds this route, or a GHL release that converges the two, cannot
+   silently drop every contact into 'Unattributed'. The failure mode of getting
+   this wrong is not an error — it is a page of plausible-looking zeroes. */
 interface Attribution {
-  campaign?: string | null;
-  campaignId?: string | null;
+  /* what this location actually sends */
+  utmCampaign?: string | null;
+  utmCampaignId?: string | null;
+  utmAdId?: string | null;
+  utmSessionSource?: string | null;
   utmSource?: string | null;
   utmMedium?: string | null;
   utmContent?: string | null;
   adSource?: string | null;
-  adId?: string | null;
-  sessionSource?: string | null;
   medium?: string | null;
   mediumId?: string | null;
   referrer?: string | null;
+  isFirst?: boolean;
+
+  /* older / unprefixed spellings, tolerated but not expected */
+  campaign?: string | null;
+  campaignId?: string | null;
+  adId?: string | null;
+  sessionSource?: string | null;
 }
 
 interface GhlContact {
   id?: string;
   dateAdded?: string;
+  attributions?: Attribution[] | null;
   attributionSource?: Attribution | null;
   lastAttributionSource?: Attribution | null;
 }
@@ -93,6 +129,40 @@ interface CampaignRow {
   campaign: string;
   leads: number;
   appointments: number;
+}
+
+interface GhlPipelineStage {
+  id?: string;
+  name?: string;
+  position?: number;
+}
+
+interface GhlPipeline {
+  id?: string;
+  name?: string;
+  stages?: GhlPipelineStage[];
+}
+
+interface GhlOpportunity {
+  id?: string;
+  name?: string;
+  status?: string;
+  monetaryValue?: number;
+  pipelineStageId?: string;
+  createdAt?: string;
+  lastStageChangeAt?: string;
+  contactId?: string;
+  attributions?: Attribution[] | null;
+}
+
+interface StageRow {
+  stage: string;
+  count: number;
+  /* Opportunities that entered this pipeline inside the selected window. Kept
+     beside the snapshot rather than replacing it, because "where everyone is
+     now" and "who arrived this month" are different questions and a single
+     number cannot answer both. */
+  newInRange: number;
 }
 
 /* ─────────────────────────── GHL client ─────────────────────────── */
@@ -291,18 +361,107 @@ async function fetchEvents(
   return all;
 }
 
+/**
+ * The pipeline the campaign runs through, resolved by name.
+ *
+ * By name and not by id, because an id in an environment variable is a value
+ * nobody can sanity-check: if it goes stale the panel empties and looks like a
+ * quiet fortnight rather than a misconfiguration. The name is legible, and when
+ * it does not match, the payload says which names do exist so the dashboard can
+ * name the fix instead of just showing nothing.
+ */
+async function fetchPipeline(
+  token: string,
+  locationId: string,
+  wanted: string,
+): Promise<{ pipeline: GhlPipeline | null; available: string[] }> {
+  const data = await ghlFetch<{ pipelines?: GhlPipeline[] }>(
+    `/opportunities/pipelines?locationId=${encodeURIComponent(locationId)}`,
+    token,
+  );
+  const all = data.pipelines ?? [];
+  const target = wanted.trim().toLowerCase();
+  const pipeline = all.find(p => (p.name ?? '').trim().toLowerCase() === target) ?? null;
+  return { pipeline, available: all.map(p => p.name ?? '').filter(Boolean) };
+}
+
+/**
+ * Every opportunity in one pipeline, walked page by page.
+ *
+ * Paging here is cursor based (`startAfter` + `startAfterId`) rather than a page
+ * number, and the two must be sent together or GHL restarts from the top and
+ * this loops until it hits the cap.
+ *
+ * Opportunities are NOT filtered to the window. A deal created before the range
+ * still occupies a stage today, and the stage panel is a snapshot of where the
+ * campaign's leads currently stand, not a count of what moved this month. The
+ * created-in-window subset is derived afterwards, from the same fetch.
+ */
+async function fetchOpportunities(
+  token: string,
+  locationId: string,
+  pipelineId: string,
+): Promise<{ rows: GhlOpportunity[]; capped: boolean }> {
+  const rows: GhlOpportunity[] = [];
+  let startAfter: number | null = null;
+  let startAfterId: string | null = null;
+
+  for (let page = 0; page < MAX_OPPORTUNITY_PAGES; page += 1) {
+    const params = new URLSearchParams({
+      location_id: locationId,
+      pipeline_id: pipelineId,
+      limit: String(OPPORTUNITY_PAGE_SIZE),
+    });
+    if (startAfter !== null && startAfterId) {
+      params.set('startAfter', String(startAfter));
+      params.set('startAfterId', startAfterId);
+    }
+
+    const data = await ghlFetch<{
+      opportunities?: GhlOpportunity[];
+      meta?: { startAfter?: number; startAfterId?: string; nextPage?: unknown };
+    }>(`/opportunities/search?${params.toString()}`, token);
+
+    const batch = data.opportunities ?? [];
+    rows.push(...batch);
+
+    const meta = data.meta ?? {};
+    const more = batch.length === OPPORTUNITY_PAGE_SIZE && meta.startAfterId;
+    if (!more) return { rows, capped: false };
+
+    startAfter = meta.startAfter ?? null;
+    startAfterId = meta.startAfterId ?? null;
+    await sleep(REQUEST_SPACING_MS);
+  }
+
+  return { rows, capped: true };
+}
+
 /* ─────────────────────────── shaping ─────────────────────────── */
 
 /**
- * Whichever attribution object actually carries data.
+ * Whichever attribution record actually carries data.
  *
- * GHL returns `{}` rather than null when it has nothing, and an empty object is
- * truthy — so `attributionSource ?? lastAttributionSource` stops at the empty
- * first-touch object and never looks at the last-touch one that holds the real
- * data. On this location that silently mislabelled a large share of contacts as
- * unattributed.
+ * `POST /contacts/search`, which is what this route calls, sends the two
+ * single-object forms, so those are the branch that normally runs. The array
+ * form is checked first only because the other endpoints send that instead and
+ * a contact fetched either way should land on the same campaign.
+ *
+ * Within the array, the entry flagged `isFirst` is the touch that produced the
+ * contact — the one a campaign report should credit. Later entries describe
+ * return visits and would credit the ad someone saw on their way back rather
+ * than the one that found them.
+ *
+ * Every object is length-checked rather than trusted for being present: GHL
+ * sends `{}` rather than null for "nothing known", and an empty object is
+ * truthy, so `attributionSource ?? lastAttributionSource` would stop at an
+ * empty first-touch object and never reach the last-touch one holding the data.
  */
 function usefulAttribution(contact: GhlContact): Attribution | null {
+  const list = Array.isArray(contact.attributions) ? contact.attributions : [];
+  const filled = list.filter(a => a && Object.keys(a).length > 0);
+  if (filled.length > 0) return filled.find(a => a.isFirst) ?? filled[0]!;
+
   const first = contact.attributionSource;
   if (first && Object.keys(first).length > 0) return first;
   const last = contact.lastAttributionSource;
@@ -315,16 +474,17 @@ export function campaignOf(contact: GhlContact): string {
   const a = usefulAttribution(contact);
   if (!a) return 'Unattributed';
 
-  const named = a.campaign;
+  const named = a.utmCampaign || a.campaign;
   if (named) return String(named).trim();
 
   /* A campaign id is not pretty, but it is still a real campaign and belongs in
      its own row rather than merged with everything else. */
-  if (a.campaignId) return `Campaign ${a.campaignId}`;
+  const id = a.utmCampaignId || a.campaignId;
+  if (id) return `Campaign ${id}`;
 
   /* No campaign at all, but we can still say where it came from, which beats
      lumping paid social in with direct traffic. */
-  const source = a.utmSource || a.adSource || a.sessionSource || a.referrer;
+  const source = a.utmSource || a.adSource || a.utmSessionSource || a.sessionSource || a.referrer;
   if (source) return `${String(source).trim()} (no campaign name)`;
 
   return 'Unattributed';
@@ -338,7 +498,8 @@ export function campaignOf(contact: GhlContact): string {
 export function sourceOf(contact: GhlContact): string {
   const a = usefulAttribution(contact);
   if (!a) return 'Unattributed';
-  const s = a.sessionSource || a.utmSource || a.adSource || a.medium || a.referrer;
+  const s =
+    a.utmSessionSource || a.sessionSource || a.utmSource || a.adSource || a.medium || a.referrer;
   return s ? String(s).trim() : 'Unattributed';
 }
 
@@ -566,6 +727,97 @@ async function handleGet(request: Request): Promise<Response> {
     const prevLeads = allContacts.filter(c => inWindow(contactMs(c), prevFromMs, prevToMs)).length;
     const prevAppointments = allEvents.filter(e => inWindow(eventMs(e), prevFromMs, prevToMs)).length;
 
+    /* ── the campaign pipeline ──
+       A miss here is reported, not thrown. The stage panel is one part of the
+       page, and a renamed pipeline should cost that panel rather than the leads
+       and appointments the rest of the dashboard is built from. */
+    const pipelineName = process.env['GHL_PIPELINE_NAME']?.trim() || DEFAULT_PIPELINE_NAME;
+    let pipelinePayload: {
+      name: string;
+      found: boolean;
+      available?: string[];
+      stages: StageRow[];
+      total: number;
+      newInRange: number;
+      won: number;
+      lost: number;
+      open: number;
+      wonValue: number;
+      capped: boolean;
+    } | null = null;
+
+    try {
+      const { pipeline, available } = await fetchPipeline(token, locationId, pipelineName);
+      if (!pipeline?.id) {
+        pipelinePayload = {
+          name: pipelineName,
+          found: false,
+          available,
+          stages: [],
+          total: 0,
+          newInRange: 0,
+          won: 0,
+          lost: 0,
+          open: 0,
+          wonValue: 0,
+          capped: false,
+        };
+      } else {
+        const { rows: opportunities, capped } = await fetchOpportunities(
+          token,
+          locationId,
+          pipeline.id,
+        );
+
+        const createdMs = (o: GhlOpportunity) => Date.parse(o.createdAt ?? '');
+        const isNew = (o: GhlOpportunity) =>
+          inWindow(createdMs(o), range.fromMs, range.toMs);
+
+        const byStageId = new Map<string, GhlOpportunity[]>();
+        for (const o of opportunities) {
+          const key = o.pipelineStageId ?? '';
+          const list = byStageId.get(key) ?? [];
+          list.push(o);
+          byStageId.set(key, list);
+        }
+
+        /* Stage order comes from GHL, not from the counts. Sorting these by size
+           would reorder the funnel every time a deal moved, and a funnel whose
+           steps change places is not a funnel. */
+        const stages: StageRow[] = (pipeline.stages ?? []).map(s => {
+          const list = byStageId.get(s.id ?? '') ?? [];
+          return {
+            stage: s.name ?? 'Unnamed stage',
+            count: list.length,
+            newInRange: list.filter(isNew).length,
+          };
+        });
+
+        const statusIs = (o: GhlOpportunity, s: string) =>
+          String(o.status ?? '').toLowerCase() === s;
+
+        pipelinePayload = {
+          name: pipeline.name ?? pipelineName,
+          found: true,
+          stages,
+          total: opportunities.length,
+          newInRange: opportunities.filter(isNew).length,
+          won: opportunities.filter(o => statusIs(o, 'won')).length,
+          lost: opportunities.filter(o => statusIs(o, 'lost')).length,
+          open: opportunities.filter(o => statusIs(o, 'open')).length,
+          wonValue: opportunities
+            .filter(o => statusIs(o, 'won'))
+            .reduce((sum, o) => sum + (Number(o.monetaryValue) || 0), 0),
+          capped,
+        };
+      }
+    } catch (err) {
+      /* Most likely a Private Integration without opportunities.readonly. The
+         rest of the report is still true, so it is served. */
+      console.error('pipeline panel unavailable:', err);
+      pipelinePayload = null;
+    }
+
     /* Appointments inherit the campaign of the contact who booked them, so a
        booking is credited to the ad that produced the lead. */
     const campaignByContact = new Map<string, string>();
@@ -666,6 +918,9 @@ async function handleGet(request: Request): Promise<Response> {
       byDay: days.map(d => byDay.get(d)!),
       bySource: [...bySource.values()].sort((a, b) => b.leads - a.leads),
       byCampaign: [...byCampaign.values()].sort((a, b) => b.leads - a.leads),
+      /* Null when the opportunities scope is missing; the dashboard hides the
+         panel rather than drawing an empty one that looks like bad news. */
+      pipeline: pipelinePayload,
       meta: {
         calendarsScanned: calendarIds.length,
         contactPagesCapped: contacts.length >= MAX_CONTACT_PAGES * CONTACT_PAGE_SIZE,
